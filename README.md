@@ -13,8 +13,9 @@ All numbers, graphs, performance metrics, and qualitative images in this documen
 - [4. Quantitative Performance](#4-quantitative-performance)
 - [5. Qualitative Inference Snapshots](#5-qualitative-inference-snapshots)
 - [6. Inference Memory Footprint & Benchmark](#6-inference-memory-footprint--benchmark)
-- [7. Repository Structure & Reproduction Commands](#7-repository-structure--reproduction-commands)
-- [8. Related Work & Inspiration](#8-related-work--inspiration)
+- [7. Limitations & Evaluation Caveats](#7-limitations--evaluation-caveats)
+- [8. Repository Structure & Reproduction Commands](#8-repository-structure--reproduction-commands)
+- [9. Related Work & Inspiration](#9-related-work--inspiration)
 
 ---
 
@@ -95,16 +96,16 @@ flowchart TD
 ### Architectural Rationale & Design Decisions
 1. **UNet with Skip Connections for Lane Structures**: Thin lane markings and road borders require fine-grained spatial localization. Skip connections copy high-resolution spatial feature maps directly from the encoder stages across to corresponding decoder stages, ensuring that sharp road boundaries and line contours are preserved rather than lost during progressive downsampling.
 2. **Four Downsampling Levels ($48 \to 24 \to 12 \to 6 \to 3$)**: With an input size of $48 \times 48$, four $2 \times 2$ max-pooling steps contract the spatial grid neatly down to $3 \times 3$ at the bottleneck ($48 / 2^4 = 3$). A 5th pooling step would result in non-integer dimensions ($1.5$), so 4 levels represent the maximum integer contracting depth.
-3. **Base Width of 32 Channels**: Choosing base channel width $C=32$ (doubling to 64, 128, 256, 512) yields 7.76M parameters. This balances high non-linear representational capacity with an ultra-lightweight memory footprint ($< 100 \text{ MB}$ VRAM), allowing instant execution on consumer laptop GPUs and CPUs.
-4. **Batch Normalization & ReLU**: Every 2D convolution is followed by `BatchNorm2d` and inplace `ReLU`. Batch normalization stabilizes activations across training, prevents internal covariate shift, and accelerates gradient propagation.
-5. **Learnable `ConvTranspose2d` vs. Fixed Bilinear Interpolation**: Transposed convolutions learn dataset-specific spatial reconstruction weights, preventing blurry oversmoothed boundaries typical of bilinear upsampling.
+3. **Base Width of 32 Channels**: Choosing base channel width $C=32$ (doubling to 64, 128, 256, 512) yields 7.76M parameters. This balances model capacity with an ultra-lightweight memory footprint ($< 100 \text{ MB}$ VRAM), allowing execution on consumer laptop GPUs and CPUs.
+4. **Batch Normalization & ReLU**: Every 2D convolution is followed by `BatchNorm2d` and inplace `ReLU`. These layers are intended to stabilize activations across training, mitigate internal covariate shift, and facilitate gradient propagation.
+5. **Learnable `ConvTranspose2d` vs. Fixed Bilinear Interpolation**: Transposed convolutions learn dataset-specific spatial reconstruction weights, intended to avoid the blurry, oversmoothed boundaries often produced by fixed bilinear upsampling.
 6. **$1 \times 1$ Output Convolution Head**: Maps the 32-channel reconstructed feature map to a single scalar logit per pixel without mixing spatial context, allowing direct probability extraction via $\sigma(x)$.
 7. **Loss Function (BCE + Dice)**: In lane detection, the background typically dominates the foreground lane pixels. Standard binary cross-entropy (BCE) treats every pixel equally and can bias the network toward predicting background. Combining $0.5 \cdot \text{BCE} + 0.5 \cdot \text{Dice}$ provides smooth gradient backpropagation through BCE while Dice loss directly maximizes contour overlap (IoU) regardless of class imbalance.
-8. **Photometric Augmentations**: The training pipeline introduces small random per-channel white balance gain shifts ($[0.92, 1.08]$), random brightness jitter ($\pm 25$), and gentle Gaussian blur. These simulate outdoor sunlight reflections, camera exposure shifts, and motion blur without distorting spatial lane boundaries.
+8. **Photometric Augmentations**: The training pipeline introduces small random per-channel white balance gain shifts ($[0.92, 1.08]$), random brightness jitter ($\pm 25$), and gentle Gaussian blur. These are intended to simulate outdoor sunlight reflections, camera exposure shifts, and motion blur without distorting spatial lane boundaries.
 
 ### Inherent Architectural Limitations
 - **Resolution Downsampling ($1280 \times 720 \to 48 \times 48$)**: Downsampling high-resolution video frames down to $48 \times 48$ compresses a $16:9$ aspect ratio into a square grid and downsamples spatial area by a factor of 400.
-- **Nearest-Neighbor Mask Upsampling Artifacts**: Scaling the predicted $48 \times 48$ binary mask back to native $1280 \times 720$ resolution creates visible blocky staircase artifacts along diagonal road edges. This discretization error imposes a natural theoretical cap on pixel-wise IoU when evaluated against smooth, native-resolution ground truth polygons.
+- **Discretization Ceiling from Nearest-Neighbor Upsampling**: Scaling the predicted $48 \times 48$ binary mask back to native $1280 \times 720$ resolution using nearest-neighbor interpolation creates visible staircase / blocky quantization artifacts along diagonal road edges. Measured empirically via [`resolution_ceiling.py`](resolution_ceiling.py) across all 200 validation images, this $48 \times 48$ discretization imposes a theoretical mean IoU ceiling of **0.9393** (median: **0.9409**, min: **0.8551**, max: **0.9785**) even when starting from perfect ground-truth polygons. Furthermore, the validation IoU measured at the native $48 \times 48$ training resolution reaches **0.9823** because both prediction and ground truth exist on the same coarse grid, whereas evaluating against full-resolution ground truth drops to **0.9312** because the upsampled blocky mask cannot perfectly fit the smooth native curves.
 
 ---
 
@@ -112,11 +113,12 @@ flowchart TD
 
 ### Dataset Overview
 - **Source**: PSU-reservoir autonomous driving sequence (Prince of Songkla University reservoir loop road).
+- **Dataset Availability**: The raw image and annotation files belong to the PSU-reservoir lane dataset from Assignment-8 and are not included in this repository (`dataset/` is gitignored). To reproduce the results, the PSU-reservoir dataset must be placed in `./dataset` before running [`prepare_dataset.py`](prepare_dataset.py).
 - **Total Images**: 1,000 frames ($1280 \times 720$ RGB JPEG).
 - **Raw Annotation Format**: Ultralytics YOLO-seg polygon text files.
 - **Lane Class Extraction**:
   - Source class `0` (`"Lane"`) is mapped to target class `0`.
-  - Polylines, bounding boxes, non-lane classes (`1: Non-Tracking Area`, `2: Tracking line left`, `3: Tracking line center`, `4: Tracking line right`) were excluded.
+  - Polylines, bounding boxes, and non-lane classes (`1: Non-Tracking Area`, `2: Tracking line left`, `3: Tracking line center`, `4: Tracking line right`) were excluded.
   - Samples with zero lane polygons: **0** (all 1,000 frames contained valid lane polygons; 0 images were excluded).
 
 ### Split & Preprocessing (`prepare_dataset.py`)
@@ -132,7 +134,7 @@ flowchart TD
 | **Epochs** | 30 |
 | **Batch Size** | 4 |
 | **Optimizer** | Adam ($\beta_1=0.9, \beta_2=0.999$) |
-| **Learning Rate** | $1.0 \times 10^{-3}$ |
+| **Learning Rate** | $1.0 \times 10^{-3}$ (constant, no scheduler) |
 | **Loss Function** | $0.5 \cdot \text{BCEWithLogitsLoss} + 0.5 \cdot \text{DiceLoss}$ |
 | **Input / Output Dimension** | $48 \times 48 \times 3$ RGB $\to$ $48 \times 48 \times 1$ Binary Mask |
 | **Compute Device** | NVIDIA GeForce RTX 4050 Laptop GPU (CUDA 12.1) |
@@ -150,10 +152,10 @@ The loss and IoU trajectories were recorded across all 30 epochs in [`checkpoint
 ![Training and Validation Curves](assets/loss_curve.png)
 
 ### Curve Interpretation
-- **Loss Convergence**: The combined BCE + Dice loss decreases smoothly from an initial $0.1087$ (train) / $0.0575$ (val) down to $0.0145$ (train) / $0.0195$ (val) at epoch 30.
-- **IoU Trajectory**: The $48 \times 48$ mean intersection-over-union increases steadily from $94.4\%$ up to $98.7\%$ on the training set and $98.2\%$ on the validation set.
-- **Train/Val Generalization Gap**: The validation curve closely follows the training trajectory throughout all 30 epochs with negligible divergence.
-- **Mid-Epoch Variations**: Minor fluctuations observed around epochs 14–16 and 27–28 coincide with randomized lighting augmentations (white balance shifts and exposure perturbations) encountering shadowed tree turns in the validation frames. The model rapidly recovered, attaining its global best validation loss at epoch 30.
+- **Loss Convergence**: The combined BCE + Dice loss decreases from an initial $0.1087$ (train) / $0.0575$ (val) down to $0.0145$ (train) / $0.0195$ (val) at epoch 30.
+- **IoU Trajectory**: The $48 \times 48$ mean intersection-over-union increases from $94.4\%$ up to $98.7\%$ on the training set and $98.2\%$ on the validation set.
+- **Validation Loss & IoU Fluctuations**: The validation trajectory exhibits noticeable noise across epochs (for example, at epoch 28 `val_loss` spikes to `0.0526` vs `train_loss` `0.0202`, with `val_iou` dipping to `0.9556` before recovering). Because validation data is evaluated strictly without augmentation (`augment=False` in `train.py`), this variability is not an augmentation artifact. A likely cause is the small batch size of 4 interacting with Batch Normalization statistics alongside a constant learning rate of $1 \times 10^{-3}$ without a decay scheduler.
+- **Convergence Status**: While the validation trend generally tracks the training trajectory, both training loss and IoU were still actively improving at epoch 30 ($0.0145$ loss and $0.9866$ IoU), indicating that the network was not yet fully converged within the 30-epoch budget and would likely benefit from additional epochs with learning rate scheduling.
 
 ---
 
@@ -187,15 +189,18 @@ Generated via [`visualize.py`](visualize.py) from the validation split. Predicti
 
 #### 1. Best Case — `frame_0987_00038450.jpg` ($\text{IoU} = 0.9690$)
 ![Best Inference Sample](assets/inference_best.png)
-- **Observations**: Excellent segmentation. The model accurately follows both road borders, the center lane divider, and the curvature of the bend. The overlap with ground truth is nearly complete.
+- **Observations**: The model closely follows both road borders, the center lane divider, and the curvature of the bend. The overlap with ground truth is nearly complete.
 
 #### 2. Median Case — `frame_0979_00038179.jpg` ($\text{IoU} = 0.9401$)
 ![Median Inference Sample](assets/inference_median.png)
-- **Observations**: Typical high-accuracy detection on the fork junction. The discrete pixel boundary steps resulting from $48 \times 48 \to 1280 \times 720$ nearest-neighbor upscaling are visible along diagonal lines, demonstrating why the theoretical maximum IoU on diagonal edges is bounded around ~0.94–0.97.
+- **Observations**: Typical high-accuracy detection on the fork junction. The discrete pixel boundary steps resulting from $48 \times 48 \to 1280 \times 720$ nearest-neighbor upscaling are visible along diagonal lines, aligning closely with the measured theoretical ceiling of **0.9393** (from `resolution_ceiling.py`).
 
 #### 3. Worst Case (Failure Analysis) — `frame_0778_00030570.jpg` ($\text{IoU} = 0.5344$)
 ![Worst Inference Sample](assets/inference_worst.png)
-- **Failure Cause Analysis**: In this bridge approach frame, the human ground-truth annotation contains an artificial, jagged cutout on the left lane (labeled as Non-Tracking Area, likely due to road surface discoloration and dark tire track shading). However, the UNet model learned the structural continuity of the road surface and correctly predicted the continuous driveable lane. Because of the label discrepancy, the computed IoU drops to $0.5344$, making this the single sample below the $0.60$ detection threshold.
+- **Error Pattern Analysis**: Inspection of the prediction versus ground truth reveals two distinct errors:
+  1. **Lower-Left False Positives**: The model fills the lower-left road surface that the ground truth excludes.
+  2. **Bottom-Center False Negatives**: The model terminates early near the bottom-center of the frame, missing lane pixels that the ground truth includes around the foreground apex.
+- **Non-Tracking Area Investigation**: Inspecting the raw source annotation in `dataset/seg_yolo_data/labels/train/frame_0778_00030570.txt` reveals a class-1 (`"Non-Tracking Area"`) polygon containing 137 vertices covering 41,945 pixels in the lower-left area ($x \in [0.000, 0.457], y \in [0.261, 0.690]$). Of these pixels, 20,409 overlap the lower-left region where class 0 was excluded. This supports the hypothesis that the human annotator explicitly designated part of the lower-left asphalt as non-tracking area (possibly due to darkened tire tracks or surface discoloration), while the single-class UNet model treated it as driveable lane. Together with the missed bottom-center region, this label discrepancy drops the IoU to $0.5344$.
 
 ---
 
@@ -228,7 +233,15 @@ Profiled on single-image inference ($1 \times 3 \times 48 \times 48$) across 100
 
 ---
 
-## 7. Repository Structure & Reproduction Commands
+## 7. Limitations & Evaluation Caveats
+
+1. **Temporal Correlation in Frame Extraction**: Filenames in the dataset follow a sequential timestamp pattern (`frame_XXXX_YYYYYYYY.jpg`), indicating continuous video capture around the PSU reservoir. Because the 80/20 train/validation split was generated via uniform random shuffling (`seed=42`) rather than segmenting by distinct continuous runs, neighboring frames with nearly identical camera viewpoints, road curvature, and lighting conditions reside in both the training and validation sets.
+2. **Single Validation Set Re-Use**: The best checkpoint (`best.pt`) was selected based on validation loss on this same 200-image split, which was subsequently used for final evaluation reporting. Consequently, the reported 99.5% detection rate and 0.9312 mean IoU are likely optimistic compared to performance on genuinely unseen road routes, distinct geographic locations, or novel lighting conditions.
+3. **Resolution Bottleneck**: The $48 \times 48$ spatial resolution limits fine boundary details; as measured by `resolution_ceiling.py`, the discretization alone caps the achievable full-resolution IoU at 0.9393 on average.
+
+---
+
+## 8. Repository Structure & Reproduction Commands
 
 ### Repository Layout
 ```
@@ -243,6 +256,7 @@ Assignment-10/
 ├── train.py                       # Training loop, BCE+Dice loss, TensorBoard + CSV logging
 ├── inference.py                   # Single/batch inference exporting binary mask PNGs
 ├── evaluation.py                  # Pixel-wise IoU against native YOLO-seg ground truth
+├── resolution_ceiling.py          # Theoretical IoU ceiling calculator for 48x48 quantization
 ├── plot_curves.py                 # Loss & IoU dual-panel curve generator
 ├── visualize.py                   # Best, median, worst qualitative snapshot generator
 ├── profile_inference.py           # CPU/GPU memory footprint and latency profiler
@@ -260,9 +274,10 @@ Assignment-10/
 ├── run/
 │   └── val_exp/
 │       ├── metrics.json           # Detailed evaluation metrics (99.5% detection rate)
+│       ├── ceiling.json           # Theoretical resolution ceiling metrics (0.9393 mean)
 │       ├── profile.json           # Inference memory & latency benchmark results
 │       └── masks/                 # 200 predicted validation mask PNGs
-└── dataset/                       # Read-only source PSU-reservoir annotation files
+└── dataset/                       # Raw PSU-reservoir dataset (gitignored; place source data here before prep)
 ```
 
 ### Complete End-to-End Reproduction Commands
@@ -272,6 +287,7 @@ Assignment-10/
 pip install -r requirements.txt
 
 # 2. Prepare dataset: filter lane class 0 polygons and create 80/20 split
+# (Assumes raw PSU-reservoir dataset is placed in ./dataset)
 python prepare_dataset.py --source-dir ./dataset --output-dir ./data
 
 # 3. Train from scratch for 30 epochs (batch size 4)
@@ -287,15 +303,19 @@ python inference.py --images-dir ./data/images/val --checkpoint checkpoints/unet
 python evaluation.py --images-dir ./data/images/val --labels-dir ./data/labels/val \
     --pred-masks-dir run/val_exp/masks --output-json run/val_exp/metrics.json
 
-# 7. Generate qualitative comparison snapshots
+# 7. Compute theoretical 48x48 resolution discretization ceiling
+python resolution_ceiling.py --images-dir ./data/images/val --labels-dir ./data/labels/val \
+    --output-json run/val_exp/ceiling.json
+
+# 8. Generate qualitative comparison snapshots
 python visualize.py --metrics-json run/val_exp/metrics.json
 
-# 8. Profile inference memory footprint and latency on CPU and GPU
+# 9. Profile inference memory footprint and latency on CPU and GPU
 python profile_inference.py --checkpoint checkpoints/unet_lane/best.pt --output-json run/val_exp/profile.json
 ```
 
 ---
 
-## 8. Related Work & Inspiration
+## 9. Related Work & Inspiration
 - [Ultrafast-Lane-Detection-Inference-Pytorch-](https://github.com/ibaiGorordo/Ultrafast-Lane-Detection-Inference-Pytorch-) — Fast lane detection inference implementation (referenced as algorithmic inspiration).
 - [YOLOTL](https://github.com/Highsky7/YOLOTL) — YOLO-based tracking and lane segmentation framework (referenced as algorithmic inspiration).
