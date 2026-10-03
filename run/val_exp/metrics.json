@@ -1,0 +1,1012 @@
+{
+  "summary": {
+    "num_images": 200,
+    "num_detected": 199,
+    "detection_rate": 0.995,
+    "avg_iou_detected": 0.9332143578491874,
+    "avg_iou_all": 0.9312200650484176,
+    "iou_threshold": 0.6
+  },
+  "per_image": [
+    {
+      "image": "frame_0004_00000205.jpg",
+      "iou": 0.9416375990290912,
+      "detected": true
+    },
+    {
+      "image": "frame_0007_00000231.jpg",
+      "iou": 0.9398316011713933,
+      "detected": true
+    },
+    {
+      "image": "frame_0012_00000437.jpg",
+      "iou": 0.9363419431864476,
+      "detected": true
+    },
+    {
+      "image": "frame_0026_00000839.jpg",
+      "iou": 0.9484549374345864,
+      "detected": true
+    },
+    {
+      "image": "frame_0028_00001001.jpg",
+      "iou": 0.8615658168867765,
+      "detected": true
+    },
+    {
+      "image": "frame_0031_00001071.jpg",
+      "iou": 0.8929000974020816,
+      "detected": true
+    },
+    {
+      "image": "frame_0033_00001143.jpg",
+      "iou": 0.9460914093149154,
+      "detected": true
+    },
+    {
+      "image": "frame_0045_00001489.jpg",
+      "iou": 0.9434810435845211,
+      "detected": true
+    },
+    {
+      "image": "frame_0047_00001512.jpg",
+      "iou": 0.941509226356033,
+      "detected": true
+    },
+    {
+      "image": "frame_0049_00001628.jpg",
+      "iou": 0.9501273694284849,
+      "detected": true
+    },
+    {
+      "image": "frame_0058_00002082.jpg",
+      "iou": 0.9411333836295702,
+      "detected": true
+    },
+    {
+      "image": "frame_0066_00002222.jpg",
+      "iou": 0.9414047004583207,
+      "detected": true
+    },
+    {
+      "image": "frame_0068_00002239.jpg",
+      "iou": 0.9392963206386885,
+      "detected": true
+    },
+    {
+      "image": "frame_0072_00002404.jpg",
+      "iou": 0.9405243162395012,
+      "detected": true
+    },
+    {
+      "image": "frame_0074_00002588.jpg",
+      "iou": 0.9396190915005106,
+      "detected": true
+    },
+    {
+      "image": "frame_0081_00002804.jpg",
+      "iou": 0.9401291365700303,
+      "detected": true
+    },
+    {
+      "image": "frame_0082_00002811.jpg",
+      "iou": 0.9428688694531587,
+      "detected": true
+    },
+    {
+      "image": "frame_0090_00003123.jpg",
+      "iou": 0.9410059843599768,
+      "detected": true
+    },
+    {
+      "image": "frame_0094_00003359.jpg",
+      "iou": 0.9435600548418538,
+      "detected": true
+    },
+    {
+      "image": "frame_0095_00003570.jpg",
+      "iou": 0.9364778978191542,
+      "detected": true
+    },
+    {
+      "image": "frame_0096_00003628.jpg",
+      "iou": 0.9416139425937332,
+      "detected": true
+    },
+    {
+      "image": "frame_0100_00003767.jpg",
+      "iou": 0.9449381749561098,
+      "detected": true
+    },
+    {
+      "image": "frame_0104_00003908.jpg",
+      "iou": 0.941682090796847,
+      "detected": true
+    },
+    {
+      "image": "frame_0105_00003922.jpg",
+      "iou": 0.944722506248991,
+      "detected": true
+    },
+    {
+      "image": "frame_0113_00004142.jpg",
+      "iou": 0.9437619635013319,
+      "detected": true
+    },
+    {
+      "image": "frame_0115_00004197.jpg",
+      "iou": 0.8800963024316363,
+      "detected": true
+    },
+    {
+      "image": "frame_0118_00004209.jpg",
+      "iou": 0.8666086701215626,
+      "detected": true
+    },
+    {
+      "image": "frame_0128_00004760.jpg",
+      "iou": 0.931212754362365,
+      "detected": true
+    },
+    {
+      "image": "frame_0142_00005352.jpg",
+      "iou": 0.9509633651613739,
+      "detected": true
+    },
+    {
+      "image": "frame_0143_00005353.jpg",
+      "iou": 0.9450179144895424,
+      "detected": true
+    },
+    {
+      "image": "frame_0147_00005519.jpg",
+      "iou": 0.9480968555964668,
+      "detected": true
+    },
+    {
+      "image": "frame_0157_00005983.jpg",
+      "iou": 0.9484014133037133,
+      "detected": true
+    },
+    {
+      "image": "frame_0160_00006180.jpg",
+      "iou": 0.946353931673577,
+      "detected": true
+    },
+    {
+      "image": "frame_0162_00006220.jpg",
+      "iou": 0.9483356282719654,
+      "detected": true
+    },
+    {
+      "image": "frame_0164_00006255.jpg",
+      "iou": 0.9494648401652822,
+      "detected": true
+    },
+    {
+      "image": "frame_0167_00006413.jpg",
+      "iou": 0.9443215438597282,
+      "detected": true
+    },
+    {
+      "image": "frame_0168_00006507.jpg",
+      "iou": 0.727800271099537,
+      "detected": true
+    },
+    {
+      "image": "frame_0176_00006681.jpg",
+      "iou": 0.9264277642767488,
+      "detected": true
+    },
+    {
+      "image": "frame_0197_00007701.jpg",
+      "iou": 0.8082423682327011,
+      "detected": true
+    },
+    {
+      "image": "frame_0204_00007858.jpg",
+      "iou": 0.9456429483726553,
+      "detected": true
+    },
+    {
+      "image": "frame_0215_00008177.jpg",
+      "iou": 0.9409662167562145,
+      "detected": true
+    },
+    {
+      "image": "frame_0217_00008274.jpg",
+      "iou": 0.9418416499650617,
+      "detected": true
+    },
+    {
+      "image": "frame_0218_00008409.jpg",
+      "iou": 0.9403735300879528,
+      "detected": true
+    },
+    {
+      "image": "frame_0221_00008522.jpg",
+      "iou": 0.9449444569427883,
+      "detected": true
+    },
+    {
+      "image": "frame_0224_00008610.jpg",
+      "iou": 0.9442173580018861,
+      "detected": true
+    },
+    {
+      "image": "frame_0225_00008717.jpg",
+      "iou": 0.9423003960643456,
+      "detected": true
+    },
+    {
+      "image": "frame_0226_00008724.jpg",
+      "iou": 0.9406107588245799,
+      "detected": true
+    },
+    {
+      "image": "frame_0229_00008919.jpg",
+      "iou": 0.9443919485085323,
+      "detected": true
+    },
+    {
+      "image": "frame_0234_00009157.jpg",
+      "iou": 0.9444682826969638,
+      "detected": true
+    },
+    {
+      "image": "frame_0235_00009340.jpg",
+      "iou": 0.9451033789284096,
+      "detected": true
+    },
+    {
+      "image": "frame_0239_00009506.jpg",
+      "iou": 0.9394793708627006,
+      "detected": true
+    },
+    {
+      "image": "frame_0251_00009995.jpg",
+      "iou": 0.9427779752219295,
+      "detected": true
+    },
+    {
+      "image": "frame_0253_00010207.jpg",
+      "iou": 0.942627937575027,
+      "detected": true
+    },
+    {
+      "image": "frame_0258_00010423.jpg",
+      "iou": 0.9436082935084855,
+      "detected": true
+    },
+    {
+      "image": "frame_0270_00010964.jpg",
+      "iou": 0.9396362794294028,
+      "detected": true
+    },
+    {
+      "image": "frame_0271_00010969.jpg",
+      "iou": 0.9411186606177562,
+      "detected": true
+    },
+    {
+      "image": "frame_0272_00011045.jpg",
+      "iou": 0.9389342125232719,
+      "detected": true
+    },
+    {
+      "image": "frame_0274_00011116.jpg",
+      "iou": 0.9408066996147787,
+      "detected": true
+    },
+    {
+      "image": "frame_0275_00011128.jpg",
+      "iou": 0.943629052779674,
+      "detected": true
+    },
+    {
+      "image": "frame_0277_00011279.jpg",
+      "iou": 0.9414560862683782,
+      "detected": true
+    },
+    {
+      "image": "frame_0282_00011420.jpg",
+      "iou": 0.9400268036611864,
+      "detected": true
+    },
+    {
+      "image": "frame_0285_00011609.jpg",
+      "iou": 0.9433080948420777,
+      "detected": true
+    },
+    {
+      "image": "frame_0297_00011978.jpg",
+      "iou": 0.9407026049847534,
+      "detected": true
+    },
+    {
+      "image": "frame_0301_00012180.jpg",
+      "iou": 0.9433065989513861,
+      "detected": true
+    },
+    {
+      "image": "frame_0323_00012848.jpg",
+      "iou": 0.9309695131779964,
+      "detected": true
+    },
+    {
+      "image": "frame_0324_00012850.jpg",
+      "iou": 0.9317109081535473,
+      "detected": true
+    },
+    {
+      "image": "frame_0333_00013213.jpg",
+      "iou": 0.9452292466992124,
+      "detected": true
+    },
+    {
+      "image": "frame_0345_00013546.jpg",
+      "iou": 0.9020953685621065,
+      "detected": true
+    },
+    {
+      "image": "frame_0349_00013670.jpg",
+      "iou": 0.9084235188406025,
+      "detected": true
+    },
+    {
+      "image": "frame_0353_00013920.jpg",
+      "iou": 0.7852431729201053,
+      "detected": true
+    },
+    {
+      "image": "frame_0364_00014217.jpg",
+      "iou": 0.898264255437638,
+      "detected": true
+    },
+    {
+      "image": "frame_0368_00014299.jpg",
+      "iou": 0.8913021466154096,
+      "detected": true
+    },
+    {
+      "image": "frame_0371_00014489.jpg",
+      "iou": 0.943213069294287,
+      "detected": true
+    },
+    {
+      "image": "frame_0374_00014843.jpg",
+      "iou": 0.9451497366054857,
+      "detected": true
+    },
+    {
+      "image": "frame_0380_00014986.jpg",
+      "iou": 0.9436197831337556,
+      "detected": true
+    },
+    {
+      "image": "frame_0388_00015183.jpg",
+      "iou": 0.9392392018209249,
+      "detected": true
+    },
+    {
+      "image": "frame_0389_00015223.jpg",
+      "iou": 0.9413035946643176,
+      "detected": true
+    },
+    {
+      "image": "frame_0390_00015251.jpg",
+      "iou": 0.9453861148516108,
+      "detected": true
+    },
+    {
+      "image": "frame_0391_00015353.jpg",
+      "iou": 0.9452724632709573,
+      "detected": true
+    },
+    {
+      "image": "frame_0395_00015447.jpg",
+      "iou": 0.9468662898473217,
+      "detected": true
+    },
+    {
+      "image": "frame_0406_00015956.jpg",
+      "iou": 0.9392275306588553,
+      "detected": true
+    },
+    {
+      "image": "frame_0409_00016136.jpg",
+      "iou": 0.9410294414444452,
+      "detected": true
+    },
+    {
+      "image": "frame_0411_00016252.jpg",
+      "iou": 0.8298038776272143,
+      "detected": true
+    },
+    {
+      "image": "frame_0430_00017023.jpg",
+      "iou": 0.9407457805475866,
+      "detected": true
+    },
+    {
+      "image": "frame_0433_00017175.jpg",
+      "iou": 0.9480669442023694,
+      "detected": true
+    },
+    {
+      "image": "frame_0439_00017478.jpg",
+      "iou": 0.9394717924156226,
+      "detected": true
+    },
+    {
+      "image": "frame_0446_00017619.jpg",
+      "iou": 0.9347264648967759,
+      "detected": true
+    },
+    {
+      "image": "frame_0460_00018018.jpg",
+      "iou": 0.9427054255947387,
+      "detected": true
+    },
+    {
+      "image": "frame_0465_00018216.jpg",
+      "iou": 0.9438595550328921,
+      "detected": true
+    },
+    {
+      "image": "frame_0470_00018445.jpg",
+      "iou": 0.9422005815676292,
+      "detected": true
+    },
+    {
+      "image": "frame_0471_00018461.jpg",
+      "iou": 0.9391892178962257,
+      "detected": true
+    },
+    {
+      "image": "frame_0474_00018501.jpg",
+      "iou": 0.9389342684745605,
+      "detected": true
+    },
+    {
+      "image": "frame_0480_00018822.jpg",
+      "iou": 0.8998133728284365,
+      "detected": true
+    },
+    {
+      "image": "frame_0506_00019721.jpg",
+      "iou": 0.9406209743234974,
+      "detected": true
+    },
+    {
+      "image": "frame_0512_00019920.jpg",
+      "iou": 0.9417119864566923,
+      "detected": true
+    },
+    {
+      "image": "frame_0518_00020131.jpg",
+      "iou": 0.9412100754073316,
+      "detected": true
+    },
+    {
+      "image": "frame_0522_00020189.jpg",
+      "iou": 0.942831173242584,
+      "detected": true
+    },
+    {
+      "image": "frame_0542_00021138.jpg",
+      "iou": 0.9440681113110425,
+      "detected": true
+    },
+    {
+      "image": "frame_0547_00021385.jpg",
+      "iou": 0.9435279622131157,
+      "detected": true
+    },
+    {
+      "image": "frame_0550_00021741.jpg",
+      "iou": 0.935727391981054,
+      "detected": true
+    },
+    {
+      "image": "frame_0552_00021991.jpg",
+      "iou": 0.9409143828470415,
+      "detected": true
+    },
+    {
+      "image": "frame_0559_00022205.jpg",
+      "iou": 0.9451617632353387,
+      "detected": true
+    },
+    {
+      "image": "frame_0566_00022396.jpg",
+      "iou": 0.9198463858964664,
+      "detected": true
+    },
+    {
+      "image": "frame_0567_00022431.jpg",
+      "iou": 0.9272567997941111,
+      "detected": true
+    },
+    {
+      "image": "frame_0571_00022702.jpg",
+      "iou": 0.9384726806877008,
+      "detected": true
+    },
+    {
+      "image": "frame_0575_00022809.jpg",
+      "iou": 0.9396753964834839,
+      "detected": true
+    },
+    {
+      "image": "frame_0581_00022970.jpg",
+      "iou": 0.9376896898590833,
+      "detected": true
+    },
+    {
+      "image": "frame_0592_00023461.jpg",
+      "iou": 0.9433726590804175,
+      "detected": true
+    },
+    {
+      "image": "frame_0598_00023699.jpg",
+      "iou": 0.9419352385439195,
+      "detected": true
+    },
+    {
+      "image": "frame_0599_00023715.jpg",
+      "iou": 0.9403001092918667,
+      "detected": true
+    },
+    {
+      "image": "frame_0604_00023888.jpg",
+      "iou": 0.9405705148131895,
+      "detected": true
+    },
+    {
+      "image": "frame_0605_00023920.jpg",
+      "iou": 0.941124018995164,
+      "detected": true
+    },
+    {
+      "image": "frame_0611_00024140.jpg",
+      "iou": 0.9353276490633216,
+      "detected": true
+    },
+    {
+      "image": "frame_0617_00024381.jpg",
+      "iou": 0.9381514624224497,
+      "detected": true
+    },
+    {
+      "image": "frame_0619_00024463.jpg",
+      "iou": 0.9372077930657563,
+      "detected": true
+    },
+    {
+      "image": "frame_0624_00024694.jpg",
+      "iou": 0.9401795735109527,
+      "detected": true
+    },
+    {
+      "image": "frame_0634_00025101.jpg",
+      "iou": 0.9410974820193941,
+      "detected": true
+    },
+    {
+      "image": "frame_0643_00025460.jpg",
+      "iou": 0.9377527530622001,
+      "detected": true
+    },
+    {
+      "image": "frame_0644_00025481.jpg",
+      "iou": 0.9334348338020308,
+      "detected": true
+    },
+    {
+      "image": "frame_0651_00025907.jpg",
+      "iou": 0.9403696559890198,
+      "detected": true
+    },
+    {
+      "image": "frame_0655_00026033.jpg",
+      "iou": 0.9381442439878793,
+      "detected": true
+    },
+    {
+      "image": "frame_0656_00026056.jpg",
+      "iou": 0.9361714462374581,
+      "detected": true
+    },
+    {
+      "image": "frame_0657_00026076.jpg",
+      "iou": 0.9344361174672027,
+      "detected": true
+    },
+    {
+      "image": "frame_0659_00026118.jpg",
+      "iou": 0.9381131125236856,
+      "detected": true
+    },
+    {
+      "image": "frame_0664_00026378.jpg",
+      "iou": 0.9402272976692623,
+      "detected": true
+    },
+    {
+      "image": "frame_0666_00026491.jpg",
+      "iou": 0.9365797262080626,
+      "detected": true
+    },
+    {
+      "image": "frame_0672_00026661.jpg",
+      "iou": 0.9377357395674154,
+      "detected": true
+    },
+    {
+      "image": "frame_0678_00027040.jpg",
+      "iou": 0.9397651906635199,
+      "detected": true
+    },
+    {
+      "image": "frame_0687_00027278.jpg",
+      "iou": 0.9433373485359683,
+      "detected": true
+    },
+    {
+      "image": "frame_0693_00027462.jpg",
+      "iou": 0.9378378722409303,
+      "detected": true
+    },
+    {
+      "image": "frame_0697_00027527.jpg",
+      "iou": 0.9345793995227685,
+      "detected": true
+    },
+    {
+      "image": "frame_0699_00027564.jpg",
+      "iou": 0.9388375946434483,
+      "detected": true
+    },
+    {
+      "image": "frame_0700_00027632.jpg",
+      "iou": 0.9240634127737288,
+      "detected": true
+    },
+    {
+      "image": "frame_0702_00027719.jpg",
+      "iou": 0.9139395514594145,
+      "detected": true
+    },
+    {
+      "image": "frame_0705_00027806.jpg",
+      "iou": 0.9384913422387412,
+      "detected": true
+    },
+    {
+      "image": "frame_0715_00028184.jpg",
+      "iou": 0.9403741559580793,
+      "detected": true
+    },
+    {
+      "image": "frame_0719_00028284.jpg",
+      "iou": 0.9387884214400499,
+      "detected": true
+    },
+    {
+      "image": "frame_0722_00028364.jpg",
+      "iou": 0.9380648383042883,
+      "detected": true
+    },
+    {
+      "image": "frame_0734_00028849.jpg",
+      "iou": 0.9318990343872696,
+      "detected": true
+    },
+    {
+      "image": "frame_0736_00028941.jpg",
+      "iou": 0.9402984066799606,
+      "detected": true
+    },
+    {
+      "image": "frame_0737_00028974.jpg",
+      "iou": 0.9400073172164365,
+      "detected": true
+    },
+    {
+      "image": "frame_0739_00029037.jpg",
+      "iou": 0.9376750420523968,
+      "detected": true
+    },
+    {
+      "image": "frame_0740_00029063.jpg",
+      "iou": 0.9398615132910936,
+      "detected": true
+    },
+    {
+      "image": "frame_0747_00029285.jpg",
+      "iou": 0.9388891341854185,
+      "detected": true
+    },
+    {
+      "image": "frame_0748_00029313.jpg",
+      "iou": 0.9408304815103169,
+      "detected": true
+    },
+    {
+      "image": "frame_0755_00029652.jpg",
+      "iou": 0.9401009857705109,
+      "detected": true
+    },
+    {
+      "image": "frame_0759_00029897.jpg",
+      "iou": 0.9365518872967158,
+      "detected": true
+    },
+    {
+      "image": "frame_0760_00029898.jpg",
+      "iou": 0.9398760285934648,
+      "detected": true
+    },
+    {
+      "image": "frame_0763_00029947.jpg",
+      "iou": 0.9390994670062414,
+      "detected": true
+    },
+    {
+      "image": "frame_0765_00029974.jpg",
+      "iou": 0.9387055091663816,
+      "detected": true
+    },
+    {
+      "image": "frame_0769_00030149.jpg",
+      "iou": 0.937880826473632,
+      "detected": true
+    },
+    {
+      "image": "frame_0774_00030253.jpg",
+      "iou": 0.9322843379238323,
+      "detected": true
+    },
+    {
+      "image": "frame_0778_00030570.jpg",
+      "iou": 0.5343557976952377,
+      "detected": false
+    },
+    {
+      "image": "frame_0782_00030692.jpg",
+      "iou": 0.9411351142709354,
+      "detected": true
+    },
+    {
+      "image": "frame_0787_00030875.jpg",
+      "iou": 0.8658458253385952,
+      "detected": true
+    },
+    {
+      "image": "frame_0788_00030913.jpg",
+      "iou": 0.9373565110258203,
+      "detected": true
+    },
+    {
+      "image": "frame_0792_00031039.jpg",
+      "iou": 0.9412187250634216,
+      "detected": true
+    },
+    {
+      "image": "frame_0795_00031250.jpg",
+      "iou": 0.9415306206379136,
+      "detected": true
+    },
+    {
+      "image": "frame_0812_00031720.jpg",
+      "iou": 0.9311919169264902,
+      "detected": true
+    },
+    {
+      "image": "frame_0825_00032082.jpg",
+      "iou": 0.9428244132652566,
+      "detected": true
+    },
+    {
+      "image": "frame_0826_00032097.jpg",
+      "iou": 0.9427500765683701,
+      "detected": true
+    },
+    {
+      "image": "frame_0827_00032162.jpg",
+      "iou": 0.940079928805109,
+      "detected": true
+    },
+    {
+      "image": "frame_0829_00032241.jpg",
+      "iou": 0.9395327568986125,
+      "detected": true
+    },
+    {
+      "image": "frame_0831_00032318.jpg",
+      "iou": 0.9395985681952267,
+      "detected": true
+    },
+    {
+      "image": "frame_0842_00032763.jpg",
+      "iou": 0.9386622443793097,
+      "detected": true
+    },
+    {
+      "image": "frame_0850_00032916.jpg",
+      "iou": 0.9387802428771503,
+      "detected": true
+    },
+    {
+      "image": "frame_0855_00033286.jpg",
+      "iou": 0.7669972088020364,
+      "detected": true
+    },
+    {
+      "image": "frame_0864_00033640.jpg",
+      "iou": 0.9398798604649008,
+      "detected": true
+    },
+    {
+      "image": "frame_0868_00033827.jpg",
+      "iou": 0.9397827243961475,
+      "detected": true
+    },
+    {
+      "image": "frame_0876_00034363.jpg",
+      "iou": 0.9345326701788617,
+      "detected": true
+    },
+    {
+      "image": "frame_0882_00034520.jpg",
+      "iou": 0.9341384676816319,
+      "detected": true
+    },
+    {
+      "image": "frame_0883_00034571.jpg",
+      "iou": 0.9356864379643146,
+      "detected": true
+    },
+    {
+      "image": "frame_0888_00034821.jpg",
+      "iou": 0.9344602474949865,
+      "detected": true
+    },
+    {
+      "image": "frame_0891_00034889.jpg",
+      "iou": 0.9363345781561297,
+      "detected": true
+    },
+    {
+      "image": "frame_0900_00035389.jpg",
+      "iou": 0.9383806222172502,
+      "detected": true
+    },
+    {
+      "image": "frame_0907_00035666.jpg",
+      "iou": 0.941328274725402,
+      "detected": true
+    },
+    {
+      "image": "frame_0908_00035702.jpg",
+      "iou": 0.9411578779892217,
+      "detected": true
+    },
+    {
+      "image": "frame_0909_00035780.jpg",
+      "iou": 0.9419705932890696,
+      "detected": true
+    },
+    {
+      "image": "frame_0914_00036096.jpg",
+      "iou": 0.9489751998563488,
+      "detected": true
+    },
+    {
+      "image": "frame_0926_00036488.jpg",
+      "iou": 0.9486452152902897,
+      "detected": true
+    },
+    {
+      "image": "frame_0931_00036701.jpg",
+      "iou": 0.9415815636744908,
+      "detected": true
+    },
+    {
+      "image": "frame_0932_00036771.jpg",
+      "iou": 0.9450038223945155,
+      "detected": true
+    },
+    {
+      "image": "frame_0937_00037034.jpg",
+      "iou": 0.9392705888625257,
+      "detected": true
+    },
+    {
+      "image": "frame_0948_00037222.jpg",
+      "iou": 0.9332265980904422,
+      "detected": true
+    },
+    {
+      "image": "frame_0955_00037457.jpg",
+      "iou": 0.938367509089553,
+      "detected": true
+    },
+    {
+      "image": "frame_0956_00037468.jpg",
+      "iou": 0.9371755951491434,
+      "detected": true
+    },
+    {
+      "image": "frame_0957_00037494.jpg",
+      "iou": 0.9399293431610809,
+      "detected": true
+    },
+    {
+      "image": "frame_0959_00037531.jpg",
+      "iou": 0.9411572968353488,
+      "detected": true
+    },
+    {
+      "image": "frame_0964_00037681.jpg",
+      "iou": 0.9435478899787055,
+      "detected": true
+    },
+    {
+      "image": "frame_0965_00037740.jpg",
+      "iou": 0.9397711736326653,
+      "detected": true
+    },
+    {
+      "image": "frame_0971_00037866.jpg",
+      "iou": 0.9416748351705184,
+      "detected": true
+    },
+    {
+      "image": "frame_0975_00038028.jpg",
+      "iou": 0.9410036137549078,
+      "detected": true
+    },
+    {
+      "image": "frame_0979_00038179.jpg",
+      "iou": 0.9401385018934743,
+      "detected": true
+    },
+    {
+      "image": "frame_0983_00038328.jpg",
+      "iou": 0.8994721019154984,
+      "detected": true
+    },
+    {
+      "image": "frame_0984_00038387.jpg",
+      "iou": 0.8859892537512343,
+      "detected": true
+    },
+    {
+      "image": "frame_0987_00038450.jpg",
+      "iou": 0.9689513943236738,
+      "detected": true
+    },
+    {
+      "image": "frame_0991_00038558.jpg",
+      "iou": 0.9416943287646776,
+      "detected": true
+    },
+    {
+      "image": "frame_0993_00038640.jpg",
+      "iou": 0.9362959468438411,
+      "detected": true
+    },
+    {
+      "image": "frame_0995_00038692.jpg",
+      "iou": 0.9363795863834513,
+      "detected": true
+    },
+    {
+      "image": "frame_0999_00038820.jpg",
+      "iou": 0.9378987116447964,
+      "detected": true
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "hardware": {
+    "cpu_model": "13th Gen Intel(R) Core(TM) i7-13620H",
+    "total_ram_gb": 15.63,
+    "gpu_model": "NVIDIA GeForce RTX 4050 Laptop GPU",
+    "torch_version": "2.5.1+cu121",
+    "cuda_available": true
+  },
+  "checkpoint_file_size_mb": 29.67,
+  "param_count": 7763041,
+  "fp32_param_size_mb": 29.61,
+  "cpu": {
+    "device": "cpu",
+    "rss_before_load_mb": 393.05,
+    "rss_after_load_mb": 461.78,
+    "rss_peak_inference_mb": 481.34,
+    "mean_latency_ms": 13.318,
+    "fps": 75.1,
+    "cuda_peak_allocated_mb": 0.0,
+    "cuda_peak_reserved_mb": 0.0
+  },
+  "gpu": {
+    "device": "cuda",
+    "rss_before_load_mb": 479.84,
+    "rss_after_load_mb": 583.2,
+    "rss_peak_inference_mb": 864.01,
+    "mean_latency_ms": 3.788,
+    "fps": 264.0,
+    "cuda_peak_allocated_mb": 69.55,
+    "cuda_peak_reserved_mb": 88.0
+  }
+}
