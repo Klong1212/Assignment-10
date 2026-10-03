@@ -1,63 +1,63 @@
-# Custom UNet Lane Segmentation
+# รายงานโครงงาน: Custom UNet สำหรับแบ่งส่วนเลนถนน (Lane Segmentation)
 
-From-scratch implementation and training of a custom U-Net convolutional neural network for single-class lane segmentation. The network takes a low-resolution $48 \times 48 \times 3$ RGB image and produces a $48 \times 48 \times 1$ binary lane mask, trained on the domain-specific PSU-reservoir lane detection dataset.
+การพัฒนาและฝึกสอนโครงข่ายประสาทเทียมแบบคอนโวลูชัน **Custom U-Net จากศูนย์ (From-Scratch)** สำหรับการตรวจจับและแบ่งส่วนเลนถนนแบบคลาสเดี่ยว (Single-Class Binary Segmentation) โครงข่ายรับภาพอินพุตขนาดต่ำ $48 \times 48 \times 3$ (RGB) และสร้างภาพหน้ากากผลลัพธ์ (Binary Mask) ขนาด $48 \times 48 \times 1$ บนชุดข้อมูลวิดีโอรอบอ่างเก็บน้ำ ม.อ. (PSU-reservoir Dataset)
 
-All numbers, graphs, performance metrics, and qualitative images in this document are derived directly from actual local training and evaluation runs in this repository.
-
----
-
-## Table of Contents
-- [1. Network Design & Rationale](#1-network-design--rationale)
-- [2. Dataset & Training Setup](#2-dataset--training-setup)
-- [3. Training & Loss Curves](#3-training--loss-curves)
-- [4. Quantitative Performance](#4-quantitative-performance)
-- [5. Qualitative Inference Snapshots](#5-qualitative-inference-snapshots)
-- [6. Inference Memory Footprint & Benchmark](#6-inference-memory-footprint--benchmark)
-- [7. Limitations & Evaluation Caveats](#7-limitations--evaluation-caveats)
-- [8. Repository Structure & Reproduction Commands](#8-repository-structure--reproduction-commands)
-- [9. Related Work & Inspiration](#9-related-work--inspiration)
+> **หมายเหตุ:** ตัวเลขการวัดผล กราฟการฝึกสอน ภาพผลลัพธ์ และการใช้ทรัพยากรทั้งหมดในเอกสารนี้ ได้มาจากการรันโค้ดจริงในระบบนี้ 100% ไม่มีการประมาณหรือแต่งตัวเลขขึ้นเอง
 
 ---
 
-## 1. Network Design & Rationale
+## สารบัญ
+- [1. การออกแบบสถาปัตยกรรมโครงข่ายและเหตุผล](#1-การออกแบบสถาปัตยกรรมโครงข่ายและเหตุผล)
+- [2. ข้อมูลชุดฝึกสอนและการตั้งค่าการทดลอง](#2-ข้อมูลชุดฝึกสอนและการตั้งค่าการทดลอง)
+- [3. กราฟ Loss และการฝึกสอน](#3-กราฟ-loss-และการฝึกสอน)
+- [4. ผลการประเมินเชิงปริมาณ (Quantitative Results)](#4-ผลการประเมินเชิงปริมาณ-quantitative-results)
+- [5. ภาพผลลัพธ์การทำนายและการวิเคราะห์เคสความผิดพลาด](#5-ภาพผลลัพธ์การทำนายและการวิเคราะห์เคสความผิดพลาด)
+- [6. การวัดประสิทธิภาพหน่วยความจำและความเร็ว (Benchmark)](#6-การวัดประสิทธิภาพหน่วยความจำและความเร็ว-benchmark)
+- [7. ข้อจำกัดและข้อควรระวังในการประเมินผล](#7-ข้อจำกัดและข้อควรระวังในการประเมินผล)
+- [8. โครงสร้างโฟลเดอร์และคำสั่งรันซ้ำ (Reproduction)](#8-โครงสร้างโฟลเดอร์และคำสั่งรันซ้ำ-reproduction)
+- [9. งานวิจัยและแหล่งอ้างอิงที่ใช้เป็นแรงบันดาลใจ](#9-งานวิจัยและแหล่งอ้างอิงที่ใช้เป็นแรงบันดาลใจ)
 
-The architecture implemented in [`model.py`](model.py) is a symmetric 4-level U-Net tailored for $48 \times 48$ spatial input dimensions.
+---
+
+## 1. การออกแบบสถาปัตยกรรมโครงข่ายและเหตุผล
+
+โครงข่ายถูกสร้างขึ้นในไฟล์ [`model.py`](model.py) เป็นสถาปัตยกรรม UNet 4 ระดับแบบสมมาตร ออกแบบมาสำหรับภาพอินพุตขนาด $48 \times 48$ พิกเซลโดยเฉพาะ
 
 ```mermaid
 flowchart TD
-    IN["Input<br/>3 x 48 x 48"] --> ENC1
+    IN["อินพุตภาพ RGB<br/>3 x 48 x 48"] --> ENC1
 
-    subgraph Encoder
-        ENC1["DoubleConv<br/>3 to 32<br/>48x48"]
-        P1["MaxPool 2x2"]
-        ENC2["DoubleConv<br/>32 to 64<br/>24x24"]
-        P2["MaxPool 2x2"]
-        ENC3["DoubleConv<br/>64 to 128<br/>12x12"]
-        P3["MaxPool 2x2"]
-        ENC4["DoubleConv<br/>128 to 256<br/>6x6"]
-        P4["MaxPool 2x2"]
+    subgraph Encoder ["ฝั่งบีบอัดคุณลักษณะ (Encoder)"]
+        ENC1["DoubleConv<br/>3 เป็น 32 ช่อง<br/>48x48 พิกเซล"]
+        P1["MaxPool 2x2<br/>(ลดขนาดลง 50%)"]
+        ENC2["DoubleConv<br/>32 เป็น 64 ช่อง<br/>24x24 พิกเซล"]
+        P2["MaxPool 2x2<br/>(ลดขนาดลง 50%)"]
+        ENC3["DoubleConv<br/>64 เป็น 128 ช่อง<br/>12x12 พิกเซล"]
+        P3["MaxPool 2x2<br/>(ลดขนาดลง 50%)"]
+        ENC4["DoubleConv<br/>128 เป็น 256 ช่อง<br/>6x6 พิกเซล"]
+        P4["MaxPool 2x2<br/>(ลดขนาดลง 50%)"]
     end
 
     ENC1 --> P1 --> ENC2 --> P2 --> ENC3 --> P3 --> ENC4 --> P4
 
-    P4 --> BN["Bottleneck DoubleConv<br/>256 to 512<br/>3x3"]
+    P4 --> BN["จุดคอดลึกสุด (Bottleneck)<br/>DoubleConv 256 เป็น 512 ช่อง<br/>3x3 พิกเซล"]
 
-    subgraph Decoder
-        UP1["ConvTranspose 2x2<br/>512 to 256<br/>-> 6x6"]
-        CAT1["Concat with ENC4<br/>256 + 256 = 512"]
-        DEC1["DoubleConv<br/>512 to 256<br/>6x6"]
+    subgraph Decoder ["ฝั่งขยายขนาดและกู้คืนรายละเอียด (Decoder)"]
+        UP1["ConvTranspose 2x2<br/>512 เป็น 256 ช่อง<br/>-> 6x6 พิกเซล"]
+        CAT1["รวมกับ Skip จาก ENC4<br/>(256 + 256 = 512 ช่อง)"]
+        DEC1["DoubleConv<br/>512 เป็น 256 ช่อง<br/>6x6 พิกเซล"]
 
-        UP2["ConvTranspose 2x2<br/>256 to 128<br/>-> 12x12"]
-        CAT2["Concat with ENC3<br/>128 + 128 = 256"]
-        DEC2["DoubleConv<br/>256 to 128<br/>12x12"]
+        UP2["ConvTranspose 2x2<br/>256 เป็น 128 ช่อง<br/>-> 12x12 พิกเซล"]
+        CAT2["รวมกับ Skip จาก ENC3<br/>(128 + 128 = 256 ช่อง)"]
+        DEC2["DoubleConv<br/>256 เป็น 128 ช่อง<br/>12x12 พิกเซล"]
 
-        UP3["ConvTranspose 2x2<br/>128 to 64<br/>-> 24x24"]
-        CAT3["Concat with ENC2<br/>64 + 64 = 128"]
-        DEC3["DoubleConv<br/>128 to 64<br/>24x24"]
+        UP3["ConvTranspose 2x2<br/>128 เป็น 64 ช่อง<br/>-> 24x24 พิกเซล"]
+        CAT3["รวมกับ Skip จาก ENC2<br/>(64 + 64 = 128 ช่อง)"]
+        DEC3["DoubleConv<br/>128 เป็น 64 ช่อง<br/>24x24 พิกเซล"]
 
-        UP4["ConvTranspose 2x2<br/>64 to 32<br/>-> 48x48"]
-        CAT4["Concat with ENC1<br/>32 + 32 = 64"]
-        DEC4["DoubleConv<br/>64 to 32<br/>48x48"]
+        UP4["ConvTranspose 2x2<br/>64 เป็น 32 ช่อง<br/>-> 48x48 พิกเซล"]
+        CAT4["รวมกับ Skip จาก ENC1<br/>(32 + 32 = 64 ช่อง)"]
+        DEC4["DoubleConv<br/>64 เป็น 32 ช่อง<br/>48x48 พิกเซล"]
     end
 
     BN --> UP1 --> CAT1 --> DEC1
@@ -65,257 +65,254 @@ flowchart TD
     DEC2 --> UP3 --> CAT3 --> DEC3
     DEC3 --> UP4 --> CAT4 --> DEC4
 
-    DEC4 --> OUTC["Conv 1x1<br/>32 to 1"]
-    OUTC --> OUT["Output logits<br/>1 x 48 x 48"]
+    DEC4 --> OUTC["Conv 1x1 Head<br/>32 เป็น 1 ช่อง (Logits)"]
+    OUTC --> OUT["หน้ากากเลนถนน (Binary Mask)<br/>1 x 48 x 48 (Sigmoid + Threshold)"]
 
-    ENC4 -. skip .-> CAT1
-    ENC3 -. skip .-> CAT2
-    ENC2 -. skip .-> CAT3
-    ENC1 -. skip .-> CAT4
+    ENC4 -. "Skip Connection" .-> CAT1
+    ENC3 -. "Skip Connection" .-> CAT2
+    ENC2 -. "Skip Connection" .-> CAT3
+    ENC1 -. "Skip Connection" .-> CAT4
 ```
 
-### Layer-by-Layer Architectural Specification
+### ตารางสรุปการทำงานทีละเลเยอร์ (Layer-by-Layer)
 
-| Stage | Operation / Layer Description | Output Resolution ($C \times H \times W$) |
+| ลำดับชั้น (Stage) | การทำงาน / คำสั่งเลเยอร์ | ขนาดมิติผลลัพธ์ ($C \times H \times W$) |
 | :--- | :--- | :--- |
-| **Input** | Raw normalized RGB tensor | $3 \times 48 \times 48$ |
+| **Input** | ภาพอินพุต RGB ปรับสเกลให้อยู่ในช่วง $[0, 1]$ | $3 \times 48 \times 48$ |
 | **Encoder 1** | `DoubleConv(3, 32)` | $32 \times 48 \times 48$ |
 | **Encoder 2** | `MaxPool2d(2)` + `DoubleConv(32, 64)` | $64 \times 24 \times 24$ |
 | **Encoder 3** | `MaxPool2d(2)` + `DoubleConv(64, 128)` | $128 \times 12 \times 12$ |
 | **Encoder 4** | `MaxPool2d(2)` + `DoubleConv(128, 256)` | $256 \times 6 \times 6$ |
-| **Bottleneck** | `MaxPool2d(2)` + `DoubleConv(256, 512)` | $512 \times 3 \times 3$ |
+| **Bottleneck**| `MaxPool2d(2)` + `DoubleConv(256, 512)` | $512 \times 3 \times 3$ |
 | **Decoder 1** | `ConvTranspose2d(512, 256, 2, 2)` + `Concat(Enc4)` + `DoubleConv(512, 256)` | $256 \times 6 \times 6$ |
 | **Decoder 2** | `ConvTranspose2d(256, 128, 2, 2)` + `Concat(Enc3)` + `DoubleConv(256, 128)` | $128 \times 12 \times 12$ |
 | **Decoder 3** | `ConvTranspose2d(128, 64, 2, 2)` + `Concat(Enc2)` + `DoubleConv(128, 64)` | $64 \times 24 \times 24$ |
 | **Decoder 4** | `ConvTranspose2d(64, 32, 2, 2)` + `Concat(Enc1)` + `DoubleConv(64, 32)` | $32 \times 48 \times 48$ |
-| **Output Head**| `Conv2d(32, 1, kernel_size=1)` (raw logits) | $1 \times 48 \times 48$ |
+| **Output Head**| `Conv2d(32, 1, kernel_size=1)` (สร้างค่า Raw Logits) | $1 \times 48 \times 48$ |
 
-- **Exact Parameter Count**: **`7,763,041`** (verified via `python model.py`).
-- **FP32 Weight Memory Footprint**: **`29.61 MB`** (checkpoint file size on disk: `29.67 MB`).
+- **จำนวนพารามิเตอร์ทั้งหมด (Exact Parameters)**: **`7,763,041` ตัว** (วัดจริงด้วย `python model.py`)
+- **ขนาดพารามิเตอร์ในรูปแบบ FP32**: **`29.61 MB`** (ขนาดไฟล์ checkpoint `best.pt` บนดิสก์คือ `29.67 MB`)
 
-### Architectural Rationale & Design Decisions
-1. **UNet with Skip Connections for Lane Structures**: Thin lane markings and road borders require fine-grained spatial localization. Skip connections copy high-resolution spatial feature maps directly from the encoder stages across to corresponding decoder stages, ensuring that sharp road boundaries and line contours are preserved rather than lost during progressive downsampling.
-2. **Four Downsampling Levels ($48 \to 24 \to 12 \to 6 \to 3$)**: With an input size of $48 \times 48$, four $2 \times 2$ max-pooling steps contract the spatial grid neatly down to $3 \times 3$ at the bottleneck ($48 / 2^4 = 3$). A 5th pooling step would result in non-integer dimensions ($1.5$), so 4 levels represent the maximum integer contracting depth.
-3. **Base Width of 32 Channels**: Choosing base channel width $C=32$ (doubling to 64, 128, 256, 512) yields 7.76M parameters. This balances model capacity with an ultra-lightweight memory footprint ($< 100 \text{ MB}$ VRAM), allowing execution on consumer laptop GPUs and CPUs.
-4. **Batch Normalization & ReLU**: Every 2D convolution is followed by `BatchNorm2d` and inplace `ReLU`. These layers are intended to stabilize activations across training, mitigate internal covariate shift, and facilitate gradient propagation.
-5. **Learnable `ConvTranspose2d` vs. Fixed Bilinear Interpolation**: Transposed convolutions learn dataset-specific spatial reconstruction weights, intended to avoid the blurry, oversmoothed boundaries often produced by fixed bilinear upsampling.
-6. **$1 \times 1$ Output Convolution Head**: Maps the 32-channel reconstructed feature map to a single scalar logit per pixel without mixing spatial context, allowing direct probability extraction via $\sigma(x)$.
-7. **Loss Function (BCE + Dice)**: In lane detection, the background typically dominates the foreground lane pixels. Standard binary cross-entropy (BCE) treats every pixel equally and can bias the network toward predicting background. Combining $0.5 \cdot \text{BCE} + 0.5 \cdot \text{Dice}$ provides smooth gradient backpropagation through BCE while Dice loss directly maximizes contour overlap (IoU) regardless of class imbalance.
-8. **Photometric Augmentations**: The training pipeline introduces small random per-channel white balance gain shifts ($[0.92, 1.08]$), random brightness jitter ($\pm 25$), and gentle Gaussian blur. These are intended to simulate outdoor sunlight reflections, camera exposure shifts, and motion blur without distorting spatial lane boundaries.
+### เหตุผลในการออกแบบทางวิศวกรรม (Design Rationale)
+1. **UNet พร้อม Skip Connections สำหรับเส้นทางและเลนถนน**: โครงสร้างเลนถนนและเส้นขอบทางต้องการตำแหน่งพิกัดเชิงพื้นที่ที่คมชัด Skip Connections ทำหน้าที่ส่งต่อ Feature Maps ความละเอียดสูงจากฝั่ง Encoder ไปรวมกับฝั่ง Decoder โดยตรง ทำให้ตำแหน่งขอบถนนไม่สูญหายไปในระหว่างการยุบขนาดภาพ
+2. **การลดขนาดลง 4 ระดับ ($48 \to 24 \to 12 \to 6 \to 3$)**: จากขนาดอินพุต $48 \times 48$ การใช้ MaxPool ขนาด $2 \times 2$ จำนวน 4 ครั้ง จะได้ขนาดลงตัวที่ $3 \times 3$ ที่ Bottleneck ($48 / 2^4 = 3$) ซึ่งเป็นการยุบขนาดระดับลึกสุดที่เป็นเลขจำนวนเต็ม
+3. **ความกว้างฐาน 32 ช่องสัญญาณ (Base Width 32)**: เริ่มต้นที่ 32 ช่องและเพิ่มเป็น 64, 128, 256, 512 ตามลำดับ ทำให้ได้พารามิเตอร์ 7.76M ตัว ซึ่งมีความจุ (Capacity) เพียงพอในการเรียนรู้ความโค้งและมุมมองของถนน แต่ใช้หน่วยความจำ VRAM ต่ำมาก ($< 100 \text{ MB}$) เหมาะกับการประมวลผลบนโน้ตบุ๊กทั่วไป
+4. **Batch Normalization และ ReLU**: มีเจตนาช่วยรักษาเสถียรภาพของการกระจายสัญญาณภายในโครงข่าย (Mitigate Internal Covariate Shift) และช่วยให้เกรเดียนต์ไหลเวียนได้อย่างราบรื่นในระหว่าง Backpropagation
+5. **การใช้ `ConvTranspose2d` แทน Bilinear Interpolation**: การใช้ Transposed Convolution ช่วยให้โครงข่ายสามารถเรียนรู้น้ำหนักในการขยายภาพกลับขึ้นมาตามลักษณะของชุดข้อมูลเอง มีเจตนาช่วยลดการเบลอหรือขอบมนเกินไปที่มักเกิดขึ้นจากการใช้ Bilinear แบบคงที่
+6. **หัวทำนายขนาด $1 \times 1$ Conv**: แปลงช่องสัญญาณ 32 ช่องสุดท้ายออกมาเป็นค่า Logit 1 ช่องต่อ 1 พิกเซลโดยตรง เพื่อนำไปแปลงเป็นความน่าจะเป็นผ่านฟังก์ชัน Sigmoid $\sigma(x)$
+7. **ฟังก์ชันการสูญเสียผสม (BCE + Dice Loss)**: เลนถนนมักมีสัดส่วนพื้นที่น้อยกว่าพื้นหลัง (Class Imbalance) จึงรวม $0.5 \cdot \text{BCE} + 0.5 \cdot \text{Dice}$ เข้าด้วยกัน โดย BCE คอยคุมการจำแนกระดับพิกเซลให้เสถียร ขณะที่ Dice Loss ช่วยดึงค่า IoU ให้สูงขึ้นโดยไม่ถูกดึงจากสัดส่วนพื้นหลังที่มากกว่า
+8. **การทำ Data Augmentation**: ปรับสมดุลแสงสีขาว (White Balance) สุ่มเพิ่ม/ลดความสว่าง ($\pm 25$) และ Gaussian Blur เล็กน้อย มีเจตนาจำลองสภาพแสงแดด เงาต้นไม้ และสัญญาณรบกวนของกล้องหน้ารถยนต์จริง
 
-### Inherent Architectural Limitations
-- **Resolution Downsampling ($1280 \times 720 \to 48 \times 48$)**: Downsampling high-resolution video frames down to $48 \times 48$ compresses a $16:9$ aspect ratio into a square grid and downsamples spatial area by a factor of 400.
-- **Discretization Ceiling from Nearest-Neighbor Upsampling**: Scaling the predicted $48 \times 48$ binary mask back to native $1280 \times 720$ resolution using nearest-neighbor interpolation creates visible staircase / blocky quantization artifacts along diagonal road edges. Measured empirically via [`resolution_ceiling.py`](resolution_ceiling.py) across all 200 validation images, this $48 \times 48$ discretization imposes a theoretical mean IoU ceiling of **0.9393** (median: **0.9409**, min: **0.8551**, max: **0.9785**) even when starting from perfect ground-truth polygons. Furthermore, the validation IoU measured at the native $48 \times 48$ training resolution reaches **0.9823** because both prediction and ground truth exist on the same coarse grid, whereas evaluating against full-resolution ground truth drops to **0.9312** because the upsampled blocky mask cannot perfectly fit the smooth native curves.
+### ข้อจำกัดของโครงสร้างทางสถาปัตยกรรม
+- **การลดขนาดภาพ ($1280 \times 720 \to 48 \times 48$)**: การบีบขนาดภาพมุมมอง $16:9$ ลงมาเป็นสี่เหลี่ยมจัตุรัส $48 \times 48$ ทำให้พื้นที่พิกเซลหายไปถึง 400 เท่า ส่งผลให้เส้นทางเล็กๆ ที่อยู่ไกลลิบตาถูกลดทอนความคมชัดลง
+- **เพดานค่า IoU ทางทฤษฎีจากการขยายภาพแบบ Nearest-Neighbor**: เมื่อโมเดลทำนายหน้ากากขนาด $48 \times 48$ แล้วขยายกลับไปเป็น $1280 \times 720$ ด้วย `INTER_NEAREST` รอยหยักแบบขั้นบันได (Staircase Artifacts) จะปรากฏขึ้นตามแนวเส้นทแยงมุม จากการวัดด้วย [`resolution_ceiling.py`](resolution_ceiling.py) บนชุด Validation 200 รูป พบว่า**เพดาน IoU สูงสุดตามทฤษฎีเฉลี่ยอยู่ที่ 0.9393** (Median: 0.9409, Min: 0.8551, Max: 0.9785) แม้จะใช้ Ground Truth ที่ถูกต้องสมบูรณ์แบบก็ตาม ส่งผลให้ค่า IoU บนภาพ $48 \times 48$ ในตอนเทรนพุ่งสูงถึง **0.9823** แต่เมื่อวัดบนภาพขนาดเต็มจะอยู่ที่ **0.9312** เนื่องจากรอยหยักของพิกเซลไม่สามารถแนบสนิทกับเส้นโค้งเดิมได้ 100%
 
 ---
 
-## 2. Dataset & Training Setup
+## 2. ข้อมูลชุดฝึกสอนและการตั้งค่าการทดลอง
 
-### Dataset Overview
-- **Source**: PSU-reservoir autonomous driving sequence (Prince of Songkla University reservoir loop road).
-- **Dataset Availability**: The raw image and annotation files belong to the PSU-reservoir lane dataset from Assignment-8 and are not included in this repository (`dataset/` is gitignored). To reproduce the results, the PSU-reservoir dataset must be placed in `./dataset` before running [`prepare_dataset.py`](prepare_dataset.py).
-- **Total Images**: 1,000 frames ($1280 \times 720$ RGB JPEG).
-- **Raw Annotation Format**: Ultralytics YOLO-seg polygon text files.
-- **Lane Class Extraction**:
-  - Source class `0` (`"Lane"`) is mapped to target class `0`.
-  - Polylines, bounding boxes, and non-lane classes (`1: Non-Tracking Area`, `2: Tracking line left`, `3: Tracking line center`, `4: Tracking line right`) were excluded.
-  - Samples with zero lane polygons: **0** (all 1,000 frames contained valid lane polygons; 0 images were excluded).
+### ที่มาของชุดข้อมูล
+- **แหล่งที่มา**: ชุดข้อมูลวิดีโอเส้นทางรอบอ่างเก็บน้ำ ม.อ. (PSU-reservoir Lane Dataset) จาก Assignment-8
+- **การจัดเตรียมไฟล์**: ไฟล์ภาพและไฟล์ Annotation ต้นฉบับไม่ได้ถูกรวมไว้ใน Git Repository นี้ (`dataset/` ถูกตั้งค่าใน `.gitignore`) หากต้องการทำซ้ำการทดลอง ให้วางชุดข้อมูลต้นฉบับไว้ที่ `./dataset` ก่อนรันสคริปต์เตรียมข้อมูล
+- **จำนวนภาพทั้งหมด**: 1,000 เฟรม ($1280 \times 720$ พิกเซล)
+- **รูปแบบ Annotation**: Ultralytics YOLO-seg (Polygon รูปหลายเหลี่ยม)
+- **การคัดกรองเลนถนน**:
+  - ดึงเฉพาะคลาส `0` (`"Lane"`)
+  - ตัดคลาส 1 (Non-Tracking Area) และคลาส 2, 3, 4 (Tracking lines) ทิ้งทั้งหมด
+  - ภาพที่ไม่มี Polygon เลนถนน: **0 รูป** (มีเลนครบทั้ง 1,000 รูป ไม่มีการตัดภาพใดทิ้ง)
 
-### Split & Preprocessing (`prepare_dataset.py`)
-- **Split Ratio**: Deterministic 80% train / 20% validation split (`seed=42`).
-- **Train Set**: 800 images + 800 label text files in `./data/{images,labels}/train/`.
-- **Validation Set**: 200 images + 200 label text files in `./data/{images,labels}/val/`.
-- **Polygon Sanity Check**: Generated [dataset_check.png](assets/dataset_check.png) visually verifying that extracted class `0` polygons accurately outline the road surface.
-- **Thin-Lane Pixel Check**: Resizing native masks to $48 \times 48$ using `cv2.INTER_NEAREST` resulted in **0 empty masks out of 1,000 (0.00%)**, well below the 5% threshold; therefore, `INTER_NEAREST` was retained for dataset loading.
+### การแบ่งชุดข้อมูล (`prepare_dataset.py`)
+- **สัดส่วนการแบ่ง**: แบ่งแบบคงที่ 80% Train และ 20% Validation ด้วย `seed=42`
+- **ชุดฝึกสอน (Train Set)**: 800 รูปภาพและ 800 ไฟล์ Label ใน `./data/{images,labels}/train/`
+- **ชุดทดสอบ (Validation Set)**: 200 รูปภาพและ 200 ไฟล์ Label ใน `./data/{images,labels}/val/`
+- **การตรวจสอบภาพตัวอย่าง**: บันทึกภาพยืนยันที่ [assets/dataset_check.png](assets/dataset_check.png) ยืนยันว่า Polygon คลาส 0 ครอบคลุมพื้นผิวถนนที่รถวิ่งได้ถูกต้อง
+- **การตรวจเช็คหน้ากากสูญหาย (Thin-Lane Check)**: เมื่อย่อหน้ากากลงเป็น $48 \times 48$ ด้วย `INTER_NEAREST` พบภาพที่มีค่าหน้ากากเป็นศูนย์ **0 รูปจาก 1,000 รูป (0.00%)** ซึ่งต่ำกว่าเกณฑ์ 5% จึงคงการใช้ `INTER_NEAREST` ตามเดิม
 
-### Training Hyperparameters & Environment
-| Hyperparameter / Environment Setting | Value |
+### สภาพแวดล้อมและไฮเปอร์พารามิเตอร์ในการเทรน
+| ไฮเปอร์พารามิเตอร์ / ข้อมูลฮาร์ดแวร์ | ค่าที่กำหนด |
 | :--- | :--- |
-| **Epochs** | 30 |
-| **Batch Size** | 4 |
-| **Optimizer** | Adam ($\beta_1=0.9, \beta_2=0.999$) |
-| **Learning Rate** | $1.0 \times 10^{-3}$ (constant, no scheduler) |
-| **Loss Function** | $0.5 \cdot \text{BCEWithLogitsLoss} + 0.5 \cdot \text{DiceLoss}$ |
-| **Input / Output Dimension** | $48 \times 48 \times 3$ RGB $\to$ $48 \times 48 \times 1$ Binary Mask |
-| **Compute Device** | NVIDIA GeForce RTX 4050 Laptop GPU (CUDA 12.1) |
-| **Host CPU & RAM** | 13th Gen Intel(R) Core(TM) i7-13620H @ 2.40 GHz, 15.63 GB RAM |
-| **Software Stack** | Python 3.12.8, PyTorch 2.5.1+cu121, OpenCV 4.11.0, TensorBoard 2.19.0 |
-| **Total Training Time** | **12 minutes 43 seconds** (~25.4 seconds / epoch) |
-| **Optimal Epoch (Best Val Loss)** | **Epoch 30** (Val Loss: `0.0195`, Val IoU: `0.9823`) |
+| **จำนวนรอบ (Epochs)** | 30 รอบ |
+| **ขนาดแบทช์ (Batch Size)** | 4 |
+| **ออปติไมเซอร์ (Optimizer)** | Adam ($\beta_1=0.9, \beta_2=0.999$) |
+| **อัตราการเรียนรู้ (Learning Rate)** | $1.0 \times 10^{-3}$ (คงที่ ไม่ได้ใช้ Scheduler) |
+| **ฟังก์ชัน Loss** | $0.5 \cdot \text{BCEWithLogitsLoss} + 0.5 \cdot \text{DiceLoss}$ |
+| **ขนาดมิติข้อมูล** | $48 \times 48 \times 3$ RGB $\to$ $48 \times 48 \times 1$ Binary Mask |
+| **การประมวลผลบนการ์ดจอ (GPU)** | NVIDIA GeForce RTX 4050 Laptop GPU (CUDA 12.1) |
+| **หน่วยประมวลผลกลางและแรม (CPU & RAM)** | 13th Gen Intel(R) Core(TM) i7-13620H, 15.63 GB RAM |
+| **ชุดซอฟต์แวร์** | Python 3.12.8, PyTorch 2.5.1+cu121, OpenCV 4.11.0, TensorBoard 2.19.0 |
+| **เวลาที่ใช้ในการเทรนจริง** | **12 นาที 43 วินาที** (เฉลี่ย ~25.4 วินาที / epoch) |
+| **Epoch ที่ดีที่สุด (Best Val Loss)** | **Epoch 30** (Val Loss: `0.0195`, Val IoU: `0.9823`) |
 
 ---
 
-## 3. Training & Loss Curves
+## 3. กราฟ Loss และการฝึกสอน
 
-The loss and IoU trajectories were recorded across all 30 epochs in [`checkpoints/unet_lane/history.csv`](checkpoints/unet_lane/history.csv) and visualized via [`plot_curves.py`](plot_curves.py):
+ค่าสถิติทุกรอบถูกบันทึกลงในไฟล์ [`checkpoints/unet_lane/history.csv`](checkpoints/unet_lane/history.csv) และพล็อตเป็นภาพด้วย [`plot_curves.py`](plot_curves.py):
 
-![Training and Validation Curves](assets/loss_curve.png)
+![กราฟการฝึกสอน Loss และ IoU](assets/loss_curve.png)
 
-### Curve Interpretation
-- **Loss Convergence**: The combined BCE + Dice loss decreases from an initial $0.1087$ (train) / $0.0575$ (val) down to $0.0145$ (train) / $0.0195$ (val) at epoch 30.
-- **IoU Trajectory**: The $48 \times 48$ mean intersection-over-union increases from $94.4\%$ up to $98.7\%$ on the training set and $98.2\%$ on the validation set.
-- **Validation Loss & IoU Fluctuations**: The validation trajectory exhibits noticeable noise across epochs (for example, at epoch 28 `val_loss` spikes to `0.0526` vs `train_loss` `0.0202`, with `val_iou` dipping to `0.9556` before recovering). Because validation data is evaluated strictly without augmentation (`augment=False` in `train.py`), this variability is not an augmentation artifact. A likely cause is the small batch size of 4 interacting with Batch Normalization statistics alongside a constant learning rate of $1 \times 10^{-3}$ without a decay scheduler.
-- **Convergence Status**: While the validation trend generally tracks the training trajectory, both training loss and IoU were still actively improving at epoch 30 ($0.0145$ loss and $0.9866$ IoU), indicating that the network was not yet fully converged within the 30-epoch budget and would likely benefit from additional epochs with learning rate scheduling.
+### การวิเคราะห์ผลจากกราฟ
+- **การลู่เข้าของ Loss**: ค่าความสูญเสีย (BCE + Dice) ลดลงต่อเนื่องจาก $0.1087$ (Train) / $0.0575$ (Val) ในรอบแรก ลงมาอยู่ที่ $0.0145$ (Train) และ $0.0195$ (Val) ในรอบที่ 30
+- **ทิศทางของค่า IoU**: ค่าเฉลี่ย IoU บนภาพ $48 \times 48$ เพิ่มขึ้นอย่างต่อเนื่องจาก $94.4\%$ สู่ $98.7\%$ ในชุด Train และ $98.2\%$ ในชุด Validation
+- **ความผันผวนของเส้น Validation**: กราฟ Validation มีการแกว่งตัวให้เห็นเป็นระยะ (ตัวอย่างเช่น ในรอบที่ 28 ค่า `val_loss` ดีดขึ้นไปที่ `0.0526` เทียบกับ `train_loss` `0.0202` และ `val_iou` ตกมาอยู่ที่ `0.9556` ก่อนจะฟื้นตัวกลับมาในรอบถัดไป) เนื่องจากชุด Validation ถูกทดสอบโดย**ไม่มีการทำ Data Augmentation** (`augment=False`) ความผันผวนนี้น่าจะมีสาเหตุมาจากขนาดแบทช์ที่เล็ก (Batch size 4) ส่งผลต่อค่าสถิติของ BatchNorm ร่วมกับการใช้ Learning Rate คงที่ $1 \times 10^{-3}$ โดยไม่มีตัวลดรอบ
+- **สถานะการลู่เข้า (Convergence Status)**: แม้เส้นทางของ Validation จะเกาะกลุ่มไปกับชุด Train ได้ดี แต่ในรอบที่ 30 ค่า Train Loss และ Train IoU ยังคงอยู่ในช่วงที่กำลังพัฒนาดีขึ้นอย่างต่อเนื่อง แสดงให้เห็นว่าโมเดลยังไม่ถึงจุดลู่เข้าสมบูรณ์ (Not fully converged) ภายในโควตา 30 epochs และน่าจะเรียนรู้ได้ดียิ่งขึ้นหากเทรนต่อพร้อมตัวปรับลด Learning Rate
 
 ---
 
-## 4. Quantitative Performance
+## 4. ผลการประเมินเชิงปริมาณ (Quantitative Results)
 
-Evaluated strictly on the held-out validation split (**200 images**) against full-resolution ground truth polygons ($1280 \times 720$) using [`evaluation.py`](evaluation.py):
+ทดสอบบนชุด Validation ที่แยกไว้ (**200 รูปภาพ**) เทียบกับ Ground Truth Polygon ขนาดเต็ม ($1280 \times 720$) โดยใช้คำสั่ง [`evaluation.py`](evaluation.py):
 
-| Metric | Measured Value | Requirement / Specification |
+| ดัชนีชี้วัด (Metric) | ค่าที่วัดได้จริง | เกณฑ์กำหนด |
 | :--- | :--- | :--- |
-| **Evaluated Images ($N$)** | **200** | Held-out 20% validation split |
-| **Positive Detection Threshold** | **$\text{IoU} > 0.60$** | Defined in assignment spec |
-| **Detected Images Count** | **199 / 200** | Positive detection criterion |
-| **Detection Rate** | **99.5%** | Positive detection percentage |
-| **Average IoU (Detected Images)** | **0.9332** | Mean IoU over positive detections |
-| **Average IoU (All 200 Images)** | **0.9312** | Global mean pixel-wise IoU |
+| **จำนวนภาพที่ใช้ทดสอบ ($N$)** | **200 รูป** | ชุดตรวจสอบที่โมเดลไม่เคยเห็น 20% |
+| **เกณฑ์การตรวจจับผ่าน (Threshold)** | **$\text{IoU} > 0.60$** | เกณฑ์ขั้นต่ำตามโจทย์กำหนด |
+| **จำนวนภาพที่ตรวจจับผ่าน** | **199 / 200 รูป** | ผ่านเกณฑ์เกือบทั้งหมด |
+| **อัตราการตรวจจับสำเร็จ (Detection Rate)** | **99.5%** | ความแม่นยำในการตรวจจับ |
+| **ค่าเฉลี่ย IoU ของภาพที่ผ่านเกณฑ์** | **0.9332** | ค่าเฉลี่ยเฉพาะกลุ่มที่ตรวจจับได้ |
+| **ค่าเฉลี่ย IoU รวมทุกภาพ (Overall Mean IoU)** | **0.9312** | ค่าเฉลี่ยรวมภาพทั้งหมด 200 รูป |
 
-All detailed image-by-image evaluation metrics are preserved in [`run/val_exp/metrics.json`](run/val_exp/metrics.json).
-
----
-
-## 5. Qualitative Inference Snapshots
-
-Generated via [`visualize.py`](visualize.py) from the validation split. Predictions are displayed as semi-transparent orange overlays alongside ground truth in green:
-
-### Combined Validation Overview (Best, Median, Worst)
-![Validation Samples Overview](assets/inference_samples.png)
+รายละเอียดเชิงลึกระดับรายภาพถูกบันทึกไว้ใน [`run/val_exp/metrics.json`](run/val_exp/metrics.json)
 
 ---
 
-### Individual Case Analysis
+## 5. ภาพผลลัพธ์การทำนายและการวิเคราะห์เคสความผิดพลาด
 
-#### 1. Best Case — `frame_0987_00038450.jpg` ($\text{IoU} = 0.9690$)
+สกัดผลการทำนายด้วย [`visualize.py`](visualize.py) โดยแสดงภาพจริง, หน้ากาก Ground Truth (สีเขียว) และหน้ากากผลลัพธ์จาก UNet (สีส้ม):
+
+### ภาพรวมการทำนายชุด Validation (ดีที่สุด, ค่ามัธยฐาน, แย่ที่สุด)
+![ภาพรวมตัวอย่างการทดสอบ](assets/inference_samples.png)
+
+---
+
+### การวิเคราะห์รายกรณี
+
+#### 1. กรณีที่ได้ผลลัพธ์ดีที่สุด (Best Case) — `frame_0987_00038450.jpg` ($\text{IoU} = 0.9690$)
 ![Best Inference Sample](assets/inference_best.png)
-- **Observations**: The model closely follows both road borders, the center lane divider, and the curvature of the bend. The overlap with ground truth is nearly complete.
+- **ผลการวิเคราะห์**: โมเดลสามารถตีกรอบครอบคลุมผิวทางเลนถนนได้อย่างคมชัดทั้งสองฝั่งเลน สอดคล้องกับแนวเส้นทางเลี้ยวของถนนอย่างสมบูรณ์แบบ
 
-#### 2. Median Case — `frame_0979_00038179.jpg` ($\text{IoU} = 0.9401$)
+#### 2. กรณีที่ได้ผลลัพธ์ระดับมัธยฐาน (Median Case) — `frame_0979_00038179.jpg` ($\text{IoU} = 0.9401$)
 ![Median Inference Sample](assets/inference_median.png)
-- **Observations**: Typical high-accuracy detection on the fork junction. The discrete pixel boundary steps resulting from $48 \times 48 \to 1280 \times 720$ nearest-neighbor upscaling are visible along diagonal lines, aligning closely with the measured theoretical ceiling of **0.9393** (from `resolution_ceiling.py`).
+- **ผลการวิเคราะห์**: ตรวจจับทางแยกตัววายได้อย่างแม่นยำ จะเห็นรอยหยักแบบขั้นบันไดตามแนวขอบถนนที่ทแยงมุม ซึ่งสอดคล้องกับค่าเพดานความละเอียดทางทฤษฎีที่วัดได้ **0.9393**
 
-#### 3. Worst Case (Failure Analysis) — `frame_0778_00030570.jpg` ($\text{IoU} = 0.5344$)
+#### 3. กรณีที่ได้ผลลัพธ์แย่ที่สุด (Worst Case / Failure Analysis) — `frame_0778_00030570.jpg` ($\text{IoU} = 0.5344$)
 ![Worst Inference Sample](assets/inference_worst.png)
-- **Error Pattern Analysis**: Inspection of the prediction versus ground truth reveals two distinct errors:
-  1. **Lower-Left False Positives**: The model fills the lower-left road surface that the ground truth excludes.
-  2. **Bottom-Center False Negatives**: The model terminates early near the bottom-center of the frame, missing lane pixels that the ground truth includes around the foreground apex.
-- **Non-Tracking Area Investigation**: Inspecting the raw source annotation in `dataset/seg_yolo_data/labels/train/frame_0778_00030570.txt` reveals a class-1 (`"Non-Tracking Area"`) polygon containing 137 vertices covering 41,945 pixels in the lower-left area ($x \in [0.000, 0.457], y \in [0.261, 0.690]$). Of these pixels, 20,409 overlap the lower-left region where class 0 was excluded. This supports the hypothesis that the human annotator explicitly designated part of the lower-left asphalt as non-tracking area (possibly due to darkened tire tracks or surface discoloration), while the single-class UNet model treated it as driveable lane. Together with the missed bottom-center region, this label discrepancy drops the IoU to $0.5344$.
+- **ลักษณะความผิดพลาดที่ตรวจพบ**:
+  1. **ทำนายเกินในส่วนล่างซ้าย (False Positive)**: โมเดลระบายสีทับลงไปบนพื้นถนนด้านล่างซ้ายที่ Ground Truth เว้นว่างไว้
+  2. **ทำนายขาดบริเวณตรงกลางล่าง (False Negative)**: โมเดลหยุดการทำนายเร็วเกินไป ทำให้ขาดส่วนปลายแหลมของถนนตรงกลางล่างที่ Ground Truth ระบุไว้
+- **การตรวจสอบพื้นที่ Non-Tracking Area**: เมื่อเปิดตรวจสอบไฟล์ Label ต้นฉบับ `dataset/seg_yolo_data/labels/train/frame_0778_00030570.txt` พบว่ามี Polygon ของคลาส 1 (`"Non-Tracking Area"`) จำนวน 137 จุด ครอบคลุมพื้นที่ 41,945 พิกเซลอยู่ในบริเวณล่างซ้ายดังกล่าว ($x \in [0.000, 0.457], y \in [0.261, 0.690]$) โดยมีพิกเซลทับซ้อนกับบริเวณที่คลาส 0 ถูกเว้นว่างไว้ถึง 20,409 พิกเซล ข้อสังเกตนี้สนับสนุนสมมติฐานว่าผู้ทำ Annotation ได้กำหนดให้ผิวถนนช่วงล่างซ้ายเป็นพื้นที่ห้ามวิ่ง (อาจเกิดจากรอยยางรถยนต์หรือสีผิวถนนที่ด่าง) ในขณะที่โมเดล UNet มองว่าพื้นผิวดังกล่าวคือถนนต่อเนื่อง จึงทำนายระบายสีลงไป เมื่อรวมกับการขาดพื้นที่บริเวณกลางล่าง ทำให้ค่า IoU ของภาพนี้ลดลงเหลือ $0.5344$ และกลายเป็นภาพเดียวที่หลุดเกณฑ์ 0.60
 
 ---
 
-## 6. Inference Memory Footprint & Benchmark
+## 6. การวัดประสิทธิภาพหน่วยความจำและความเร็ว (Benchmark)
 
-Profiled on single-image inference ($1 \times 3 \times 48 \times 48$) across 100 benchmark iterations using [`profile_inference.py`](profile_inference.py). Results are recorded in [`run/val_exp/profile.json`](run/val_exp/profile.json):
+วัดผลด้วย [`profile_inference.py`](profile_inference.py) บนภาพอินพุตเดี่ยว ($1 \times 3 \times 48 \times 48$) ทำซ้ำ 100 รอบหลัง Warmup บันทึกข้อมูลที่ [`run/val_exp/profile.json`](run/val_exp/profile.json):
 
-### Hardware Specification
-- **CPU**: 13th Gen Intel(R) Core(TM) i7-13620H (16 threads)
-- **System Memory**: 15.63 GB RAM
-- **GPU**: NVIDIA GeForce RTX 4050 Laptop GPU (6 GB VRAM)
-- **Framework**: PyTorch 2.5.1+cu121
+### ข้อมูลระบบฮาร์ดแวร์
+- **CPU**: 13th Gen Intel(R) Core(TM) i7-13620H (16 Threads)
+- **RAM**: 15.63 GB
+- **GPU**: NVIDIA GeForce RTX 4050 Laptop GPU (VRAM 6 GB)
+- **PyTorch**: 2.5.1+cu121
 
-### Memory & Latency Benchmark Table
+### ตารางเปรียบเทียบ CPU และ GPU
 
-| Measurement Dimension | CPU Benchmark | GPU (CUDA) Benchmark |
+| รายการที่วัด | ทำงานบน CPU | ทำงานบน GPU (CUDA) |
 | :--- | :--- | :--- |
-| **Total Model Parameters** | 7,763,041 | 7,763,041 |
-| **FP32 Weight Size** | 29.61 MB | 29.61 MB |
-| **Checkpoint File Size on Disk** | 29.67 MB | 29.67 MB |
-| **Process RSS (Before Model Load)** | 393.05 MB | 479.84 MB |
-| **Process RSS (After Model Load)** | 461.78 MB | 583.20 MB |
-| **Process RSS (Peak during 100 Inferences)** | 481.34 MB | 864.01 MB |
-| **Peak CUDA VRAM Allocated** | N/A ($0.0 \text{ MB}$) | **69.55 MB** |
-| **Peak CUDA VRAM Reserved** | N/A ($0.0 \text{ MB}$) | **88.00 MB** |
-| **Mean Inference Latency** | **13.32 ms / image** | **3.79 ms / image** |
-| **Inference Throughput** | **75.1 FPS** | **264.0 FPS** |
-
-*Note: CPU and GPU benchmarks were profiled in isolated runs to prevent memory state contamination.*
+| **จำนวนพารามิเตอร์ทั้งหมด** | 7,763,041 ตัว | 7,763,041 ตัว |
+| **ขนาดน้ำหนักโมเดล (FP32)** | 29.61 MB | 29.61 MB |
+| **ขนาดไฟล์โมเดล Checkpoint บนดิสก์** | 29.67 MB | 29.67 MB |
+| **หน่วยความจำ Process RSS (ก่อนโหลดโมเดล)** | 393.05 MB | 479.84 MB |
+| **หน่วยความจำ Process RSS (หลังโหลดโมเดล)** | 461.78 MB | 583.20 MB |
+| **หน่วยความจำ Process RSS (Peak สูงสุดระหว่างรัน 100 รูป)** | 481.34 MB | 864.01 MB |
+| **หน่วยความจำ VRAM บนการ์ดจอที่ใช้งานจริง (Allocated)** | N/A | **69.55 MB** |
+| **หน่วยความจำ VRAM บนการ์ดจอที่จองไว้ (Reserved)** | N/A | **88.00 MB** |
+| **ความหน่วงเวลาเฉลี่ย (Mean Latency)** | **13.32 มิลลิวินาที / ภาพ** | **3.79 มิลลิวินาที / ภาพ** |
+| **ความเร็วในการประมวลผล (Throughput)** | **75.1 FPS** | **264.0 FPS** |
 
 ---
 
-## 7. Limitations & Evaluation Caveats
+## 7. ข้อจำกัดและข้อควรระวังในการประเมินผล
 
-1. **Temporal Correlation in Frame Extraction**: Filenames in the dataset follow a sequential timestamp pattern (`frame_XXXX_YYYYYYYY.jpg`), indicating continuous video capture around the PSU reservoir. Because the 80/20 train/validation split was generated via uniform random shuffling (`seed=42`) rather than segmenting by distinct continuous runs, neighboring frames with nearly identical camera viewpoints, road curvature, and lighting conditions reside in both the training and validation sets.
-2. **Single Validation Set Re-Use**: The best checkpoint (`best.pt`) was selected based on validation loss on this same 200-image split, which was subsequently used for final evaluation reporting. Consequently, the reported 99.5% detection rate and 0.9312 mean IoU are likely optimistic compared to performance on genuinely unseen road routes, distinct geographic locations, or novel lighting conditions.
-3. **Resolution Bottleneck**: The $48 \times 48$ spatial resolution limits fine boundary details; as measured by `resolution_ceiling.py`, the discretization alone caps the achievable full-resolution IoU at 0.9393 on average.
+1. **ความสัมพันธ์เชิงเวลาของเฟรมวิดีโอ (Temporal Correlation)**: ชื่อไฟล์ในชุดข้อมูลเรียงลำดับตามตัวเลขเวลาต่อเนื่อง (`frame_XXXX_YYYYYYYY.jpg`) ซึ่งมาจากการขับรถบันทึกวิดีโอต่อเนื่องรอบอ่างเก็บน้ำ การสุ่มแบ่ง Train/Validation แบบ Random Shuffle (`seed=42`) ทำให้มีเฟรมที่อยู่ติดกันและมีมุมกล้องหรือแสงเงาคล้ายคลึงกันกระจายตัวอยู่ในทั้งสองชุด
+2. **การคัดเลือกโมเดลบนชุด Validation เดียวกัน**: โมเดลตัวที่ดีที่สุด (`best.pt`) ถูกคัดเลือกจากรอบที่มีค่า Validation Loss ต่ำที่สุดบนชุด 200 ภาพนี้ และถูกนำมาใช้ประเมินผลตัวเลขสรุปในชุดเดียวกัน ทำให้ค่า Detection Rate 99.5% และค่าเฉลี่ย IoU 0.9312 มีแนวโน้มที่จะให้ผลเชิงบวกมากกว่า (Optimistic) เมื่อเทียบกับการนำไปทดสอบบนเส้นทางใหม่หรือสถานที่จริงภายนอก
+3. **ข้อจำกัดจากขนาดภาพต่ำ ($48 \times 48$)**: การลดขนาดภาพลงมาทำให้สูญเสียรายละเอียดขอบเส้นทาง และทำให้เกิดเพดานทางทฤษฎีจากการขยายภาพกลับที่ไม่สามารถเกิน 0.9393 ได้โดยเฉลี่ย
 
 ---
 
-## 8. Repository Structure & Reproduction Commands
+## 8. โครงสร้างโฟลเดอร์และคำสั่งรันซ้ำ (Reproduction)
 
-### Repository Layout
+### ผังโครงสร้างไฟล์ในโปรเจกต์
 ```
 Assignment-10/
-├── .gitignore
-├── Assignment-10.txt              # Original assignment prompt and requirements
-├── custom-unet-architecture.md    # Architecture specification & mermaid diagram
-├── requirements.txt               # Dependencies
-├── model.py                       # Custom from-scratch UNet architecture (7.76M params)
-├── dataset.py                     # YOLO-seg dataset parser, augmentations, loader
-├── prepare_dataset.py             # Dataset conversion, polygon filter, 80/20 train/val split
-├── train.py                       # Training loop, BCE+Dice loss, TensorBoard + CSV logging
-├── inference.py                   # Single/batch inference exporting binary mask PNGs
-├── evaluation.py                  # Pixel-wise IoU against native YOLO-seg ground truth
-├── resolution_ceiling.py          # Theoretical IoU ceiling calculator for 48x48 quantization
-├── plot_curves.py                 # Loss & IoU dual-panel curve generator
-├── visualize.py                   # Best, median, worst qualitative snapshot generator
-├── profile_inference.py           # CPU/GPU memory footprint and latency profiler
-├── assets/                        # Generated figures and verification images
-│   ├── dataset_check.png          # Polygon extraction sanity check
-│   ├── loss_curve.png             # Dual-panel loss & IoU training curves
-│   ├── inference_best.png         # Best qualitative sample (IoU 0.9690)
-│   ├── inference_median.png       # Median qualitative sample (IoU 0.9401)
-│   ├── inference_worst.png        # Worst failure case sample (IoU 0.5344)
-│   └── inference_samples.png      # Combined 3x3 qualitative overview
+├── .gitignore                     # กำหนดไฟล์ที่ไม่ต้องติดตามลง Git
+├── Assignment-10.txt              # ข้อกำหนดและโจทย์การทดลอง
+├── custom-unet-architecture.md    # รายละเอียดสถาปัตยกรรมและไดอะแกรม
+├── requirements.txt               # รายการไลบรารีที่จำเป็น
+├── model.py                       # โครงสร้าง Custom UNet เขียนจากศูนย์ (7.76M params)
+├── dataset.py                     # ตัวโหลดข้อมูล จัดการ YOLO-seg และทำ Augmentation
+├── prepare_dataset.py             # สคริปต์สกัดคลาสเลนและแบ่ง 80/20 ลง ./data
+├── train.py                       # สคริปต์ฝึกสอน บันทึก TensorBoard และ history.csv
+├── inference.py                   # สคริปต์รัน Inference สร้างภาพหน้ากาก Binary Mask
+├── evaluation.py                  # สคริปต์วัดค่า IoU เทียบกับ Ground Truth ต้นฉบับ
+├── resolution_ceiling.py          # สคริปต์วัดเพดาน IoU ทางทฤษฎีจากการย่อขนาด 48x48
+├── plot_curves.py                 # สคริปต์สร้างกราฟ Loss และ IoU สองพาเนล
+├── visualize.py                   # สคริปต์สร้างภาพเปรียบเทียบ Best, Median, Worst Case
+├── profile_inference.py           # สคริปต์วัดการกินแรม VRAM และความเร็ว FPS
+├── assets/                        # โฟลเดอร์เก็บภาพรายงานผล
+│   ├── dataset_check.png          # ภาพยืนยันความถูกต้องของข้อมูลเลนถนน
+│   ├── loss_curve.png             # ภาพกราฟ Loss และ IoU ตลอด 30 รอบ
+│   ├── inference_best.png         # ภาพผลลัพธ์ที่ดีที่สุด (IoU 0.9690)
+│   ├── inference_median.png       # ภาพผลลัพธ์มัธยฐาน (IoU 0.9401)
+│   ├── inference_worst.png        # ภาพผลลัพธ์ที่แย่ที่สุด (IoU 0.5344)
+│   └── inference_samples.png      # ภาพสรุปเปรียบเทียบทั้ง 3 กรณี
 ├── checkpoints/
 │   └── unet_lane/
-│       ├── best.pt                # Best model weights checkpoint (Epoch 30)
-│       └── history.csv            # Per-epoch training & validation metrics log
+│       ├── best.pt                # น้ำหนักโมเดลรอบที่ดีที่สุด (Epoch 30)
+│       └── history.csv            # ประวัติการฝึกสอนและค่าความแม่นยำราย Epoch
 ├── run/
 │   └── val_exp/
-│       ├── metrics.json           # Detailed evaluation metrics (99.5% detection rate)
-│       ├── ceiling.json           # Theoretical resolution ceiling metrics (0.9393 mean)
-│       ├── profile.json           # Inference memory & latency benchmark results
-│       └── masks/                 # 200 predicted validation mask PNGs
-└── dataset/                       # Raw PSU-reservoir dataset (gitignored; place source data here before prep)
+│       ├── metrics.json           # รายละเอียดผลการประเมินทางสถิติทั้งหมด
+│       ├── ceiling.json           # ผลการคำนวณเพดาน IoU ทางทฤษฎี (เฉลี่ย 0.9393)
+│       └── profile.json           # ข้อมูล Benchmark หน่วยความจำและความเร็ว
+└── dataset/                       # ชุดข้อมูลต้นฉบับ PSU-reservoir (gitignored)
 ```
 
-### Complete End-to-End Reproduction Commands
+### ขั้นตอนการรันคำสั่งทั้งหมดตั้งแต่ต้นจนจบ
 
 ```bash
-# 1. Install dependencies
+# 1. ติดตั้งไลบรารีที่จำเป็น
 pip install -r requirements.txt
 
-# 2. Prepare dataset: filter lane class 0 polygons and create 80/20 split
-# (Assumes raw PSU-reservoir dataset is placed in ./dataset)
+# 2. เตรียมชุดข้อมูล (คัดกรองเฉพาะคลาสเลน 0 และแบ่ง 80/20)
+# ต้องวางชุดข้อมูล PSU-reservoir ไว้ที่ ./dataset ก่อนรันคำสั่งนี้
 python prepare_dataset.py --source-dir ./dataset --output-dir ./data
 
-# 3. Train from scratch for 30 epochs (batch size 4)
+# 3. เทรนโมเดล Custom UNet จำนวน 30 Epochs (Batch size 4)
 python train.py --data-root ./data --epochs 30 --batch-size 4 --run-name unet_lane
 
-# 4. Generate training loss and IoU curve figure
+# 4. สร้างภาพกราฟ Loss และ IoU
 python plot_curves.py --history-csv checkpoints/unet_lane/history.csv --output assets/loss_curve.png
 
-# 5. Run inference on validation split (generates binary masks under run/val_exp/masks/)
+# 5. รัน Inference ทำนายหน้ากากภาพชุด Validation
 python inference.py --images-dir ./data/images/val --checkpoint checkpoints/unet_lane/best.pt --run-name val_exp
 
-# 6. Evaluate pixel-wise IoU against ground truth
+# 6. ประเมินผลเปรียบเทียบค่า IoU กับ Ground Truth ขนาดเต็ม
 python evaluation.py --images-dir ./data/images/val --labels-dir ./data/labels/val \
     --pred-masks-dir run/val_exp/masks --output-json run/val_exp/metrics.json
 
-# 7. Compute theoretical 48x48 resolution discretization ceiling
+# 7. คำนวณเพดานความละเอียดทางทฤษฎีจากการย่อภาพ 48x48
 python resolution_ceiling.py --images-dir ./data/images/val --labels-dir ./data/labels/val \
     --output-json run/val_exp/ceiling.json
 
-# 8. Generate qualitative comparison snapshots
+# 8. สร้างภาพตัวอย่างผลลัพธ์ Best, Median, Worst Case
 python visualize.py --metrics-json run/val_exp/metrics.json
 
-# 9. Profile inference memory footprint and latency on CPU and GPU
+# 9. วัด Benchmark ประสิทธิภาพหน่วยความจำและความเร็วบน CPU และ GPU
 python profile_inference.py --checkpoint checkpoints/unet_lane/best.pt --output-json run/val_exp/profile.json
 ```
 
 ---
 
-## 9. Related Work & Inspiration
-- [Ultrafast-Lane-Detection-Inference-Pytorch-](https://github.com/ibaiGorordo/Ultrafast-Lane-Detection-Inference-Pytorch-) — Fast lane detection inference implementation (referenced as algorithmic inspiration).
-- [YOLOTL](https://github.com/Highsky7/YOLOTL) — YOLO-based tracking and lane segmentation framework (referenced as algorithmic inspiration).
+## 9. งานวิจัยและแหล่งอ้างอิงที่ใช้เป็นแรงบันดาลใจ
+- [Ultrafast-Lane-Detection-Inference-Pytorch-](https://github.com/ibaiGorordo/Ultrafast-Lane-Detection-Inference-Pytorch-) — แนวทางการทำ Inference สำหรับงาน Lane Detection (อ้างอิงเป็นแรงบันดาลใจในการศึกษา)
+- [YOLOTL](https://github.com/Highsky7/YOLOTL) — เฟรมเวิร์กการทำ Tracking และแบ่งส่วนเลนถนน (อ้างอิงเป็นแรงบันดาลใจในการศึกษา)
